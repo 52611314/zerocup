@@ -7,6 +7,7 @@ const links=[['/','首页'],['/learn','纸上学堂'],['/studio','剪纸工坊']
 <template>
  <div>
   <NuxtRouteAnnouncer />
+  <PaperNavigation/>
   <a class="skip" href="#main">跳到主要内容</a>
   <header class="site-header">
    <NuxtLink to="/" class="brand" aria-label="纸上生花首页"><img src="/favicon.svg" width="38" height="38" alt=""/><span>纸上生花<small>一纸一世界 · 一剪一传承</small></span></NuxtLink>

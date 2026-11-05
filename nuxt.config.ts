@@ -3,7 +3,7 @@ export default defineNuxtConfig({
   vite: { ssr: { noExternal: [/shared\/(model|patterns)/] } },
   compatibilityDate: '2026-03-01',
   devtools: { enabled: false },
-  css: ['~/assets/css/main.css'],
+  css: ['~/assets/css/main.css','~/assets/css/motion.css'],
   app: {
     head: {
       htmlAttrs: { lang: 'zh-CN' },

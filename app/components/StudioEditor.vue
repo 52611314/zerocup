@@ -23,11 +23,12 @@ async function nextStep(){if(!tutorial.value||!requirementMet.value)return;progr
 function commit(next:PaperModel){history.commit(next);model.value=cloneModel(history.current);revision.value++;hasUnfolded.value=false}
 function undo(){model.value=history.undo();revision.value++;selected.value=null;hasUnfolded.value=false}
 function redo(){model.value=history.redo();revision.value++;selected.value=null;hasUnfolded.value=false}
+const fallingCut = ref<Cut|null>(null)
 function add(position={x:56,y:22}) {
  if(!editable.value)return
  if(model.value.cuts.length>=80){feedback('这张纸最多放置 80 个切口。','error');return}
  const c:Cut={id:crypto.randomUUID(),type:tool.value,...clampPosition(position.x,position.y),size:8,aspect:tool.value==='drop'?.55:1,angle:23}
- const next=cloneModel(model.value);next.cuts.push(c);commit(next);selected.value=c.id
+ const next=cloneModel(model.value);next.cuts.push(c);commit(next);selected.value=c.id;fallingCut.value=matchMedia('(prefers-reduced-motion: reduce)').matches?null:c
 }
 function patch(field:'size'|'aspect'|'angle',value:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;c[field]=value;commit(next)}
 function move(dx:number,dy:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;Object.assign(c,clampPosition(c.x+dx,c.y+dy));commit(next)}
@@ -47,7 +48,7 @@ let animationGeneration=0
 function unfold(){const token=++animationGeneration;unfolded.value=true;hasUnfolded.value=true
  if(matchMedia('(prefers-reduced-motion: reduce)').matches){sectors.value=8;unfolding.value=false;return}
  sectors.value=1;unfolding.value=true
- for(const [n,ms] of [[2,100],[4,370],[8,720]] as const)setTimeout(()=>{if(token!==animationGeneration)return;sectors.value=n;if(n===8)unfolding.value=false},ms)
+ for(const [n,ms] of [[2,100],[4,370],[8,720]] as const)setTimeout(()=>{if(token!==animationGeneration)return;sectors.value=n;if(n===8)setTimeout(()=>{if(token===animationGeneration)unfolding.value=false},240)},ms)
 }
 function skip(){animationGeneration++;sectors.value=8;unfolding.value=false}
 function fold(){skip();unfolded.value=false}
@@ -95,6 +96,7 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
      <path data-paper :d="SECTOR_PATH" fill="transparent" stroke="#b28a48" stroke-width=".3"/>
      <path d="M -3 0 L 104 0 M 0 0 L 74 74" stroke="#b28a48" stroke-width=".35" stroke-dasharray="1 1.4" fill="none"/>
      <g clip-path="url(#edit-sector)"><path v-for="c in model.cuts" :key="c.id" :d="cutPath(c)" :transform="`translate(${c.x} ${c.y}) rotate(${c.angle})`" fill="transparent" :stroke="selected===c.id?'#24201D':'#B28A48'" :stroke-width="selected===c.id?'.8':'.35'" class="cut-handle" @pointerdown.stop="pointerDown($event,c.id)"/></g>
+     <g v-if="fallingCut" :key="fallingCut.id" :transform="`translate(${fallingCut.x} ${fallingCut.y}) rotate(${fallingCut.angle})`" pointer-events="none" aria-hidden="true"><path class="cut-off" :d="cutPath(fallingCut)" :fill="model.color" @animationend="fallingCut=null"/></g>
      <circle r="1" fill="#b28a48"/><text x="5" y="-5" class="board-label">折线</text><text x="72" y="83" class="board-label">1/8 纸面</text>
     </svg>
     <div class="canvas-watermark">纸 上 生 花<span>在留白里，看见可能。</span></div>
@@ -106,7 +108,7 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
     <div v-if="model.cuts.length" class="cut-selector"><label for="cut-list">选中切口</label><select id="cut-list" v-model="selected"><option :value="null">请选择要调整的切口</option><option v-for="(c,i) in model.cuts" :key="c.id" :value="c.id">{{i+1}} · {{({circle:'圆形',triangle:'三角形',drop:'水滴'})[c.type]}}</option></select></div>
     <div v-if="chosen" class="cut-adjust"><div class="control-label"><span>调整位置</span><span>{{chosen.x.toFixed(0)}}, {{chosen.y.toFixed(0)}}</span></div><div class="position-controls"><button aria-label="切口左移" @click="move(-3,0)">←</button><button aria-label="切口上移" @click="move(0,-3)">↑</button><button aria-label="切口下移" @click="move(0,3)">↓</button><button aria-label="切口右移" @click="move(3,0)">→</button></div><label class="slider-label">大小 <output>{{chosen.size}}</output><input aria-label="切口大小" type="range" min="1" max="28" step="1" :value="chosen.size" @input="patch('size',Number(($event.target as HTMLInputElement).value))"/></label><label class="slider-label">长宽 <output>{{chosen.aspect.toFixed(1)}}</output><input aria-label="切口长宽比例" type="range" min=".3" max="2.5" step=".1" :value="chosen.aspect" @input="patch('aspect',Number(($event.target as HTMLInputElement).value))"/></label><label class="slider-label">角度 <output>{{chosen.angle}}°</output><input aria-label="切口角度" type="range" min="-180" max="180" step="1" :value="chosen.angle" @input="patch('angle',Number(($event.target as HTMLInputElement).value))"/></label><button class="delete-cut" @click="remove">移除这个切口 ×</button></div></fieldset>
     <fieldset :disabled="!editable"><legend>02 / 挑一张纸</legend><div class="color-choices"><button v-for="(c,i) in COLORS" :key="c" :style="{background:c}" :class="{selected:model.color===c}" :aria-label="['朱砂红','深绛红','赭红','墨黑'][i]" :aria-pressed="model.color===c" @click="color(c)"><span v-if="model.color===c">✓</span></button></div><button class="template-toggle" @click="showTemplates=!showTemplates" :aria-expanded="showTemplates">从一个起始纹样开始 <span>{{showTemplates?'−':'＋'}}</span></button><AsyncState v-if="showTemplates" :pending="patternsLoading" :error="patternsError" :empty="!patterns?.length" @retry="retryPatterns"><div class="template-grid"><button v-for="p in patterns" :key="p.id" @click="template(p)"><PaperArt :model="p.model" :label="p.name"/><span>{{p.name}}</span></button></div></AsyncState></fieldset>
-    <div class="save-panel"><h2>把心意收好</h2><label for="work-title">作品名称</label><input id="work-title" v-model="title" maxlength="60" :disabled="!editable"/><label for="work-description">写一点创作心意 <span>（选填）</span></label><textarea id="work-description" v-model="description" maxlength="500" rows="2" :disabled="!editable" placeholder="这张纸，想留住什么？"/><p class="save-status" role="status">{{saving?'正在保存到服务器…':id&&!dirty?'已保存到服务器':dirty?'有未保存的创作':'等待你的第一剪'}}</p><p v-if="saveError" class="inline-error" role="alert">{{saveError}}</p><button class="btn primary full" v-if="editable" :disabled="saving||!title.trim()" @click="save()">{{saving?'正在收好…':saveError?'重试保存 ↻':'保存草稿 ↓'}}</button><button v-if="saveError" class="text-link" :disabled="saving" @click="save(true)">另存一份新草稿</button><button v-if="editable" class="btn full" :disabled="saving||submitting||!title.trim()||!model.cuts.length" @click="submit">{{submitting?'正在送达…':'投稿到纸上展览 ↗'}}</button><p class="fine-print">当前浏览器保存访客身份。投稿通过审核后公开，草稿只属于你。</p></div>
+    <div class="save-panel"><h2>把心意收好</h2><label for="work-title">作品名称</label><input id="work-title" v-model="title" maxlength="60" :disabled="!editable"/><label for="work-description">写一点创作心意 <span>（选填）</span></label><textarea id="work-description" v-model="description" maxlength="500" rows="2" :disabled="!editable" placeholder="这张纸，想留住什么？"/><p class="save-status" :class="{stamped:id&&!dirty&&!saving}" role="status">{{saving?'正在保存到服务器…':id&&!dirty?'已保存到服务器':dirty?'有未保存的创作':'等待你的第一剪'}}</p><p v-if="saveError" class="inline-error" role="alert">{{saveError}}</p><button class="btn primary full" v-if="editable" :disabled="saving||!title.trim()" @click="save()">{{saving?'正在收好…':saveError?'重试保存 ↻':'保存草稿 ↓'}}</button><button v-if="saveError" class="text-link" :disabled="saving" @click="save(true)">另存一份新草稿</button><button v-if="editable" class="btn full" :disabled="saving||submitting||!title.trim()||!model.cuts.length" @click="submit">{{submitting?'正在送达…':'投稿到纸上展览 ↗'}}</button><p class="fine-print">当前浏览器保存访客身份。投稿通过审核后公开，草稿只属于你。</p></div>
    </aside>
   </div>
  </AsyncState>
