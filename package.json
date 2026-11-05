@@ -1,0 +1,37 @@
+{
+  "name": "zhishang-shenghua",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": { "node": ">=22.12.0" },
+  "scripts": {
+    "dev": "nuxt dev --host 127.0.0.1",
+    "build": "nuxt build",
+    "start": "node --env-file=.env .output/server/index.mjs",
+    "postinstall": "nuxt prepare",
+    "db:local": "node --env-file=.env scripts/local-postgres.mjs",
+    "db:migrate": "node --env-file=.env scripts/migrate.mjs",
+    "db:seed": "tsx --env-file=.env scripts/seed.ts",
+    "test": "tsx --test tests/model.test.ts",
+    "test:api": "tsx --env-file=.env --test tests/api.test.ts",
+    "test:browser": "node --env-file=.env scripts/browser-check.mjs",
+    "typecheck": "nuxt typecheck",
+    "package:anonymous": "node scripts/package.mjs anonymous",
+    "package:full": "node scripts/package.mjs full"
+  },
+  "dependencies": {
+    "nuxt": "4.4.2",
+    "vue": "3.5.30",
+    "vue-router": "4.6.4",
+    "pg": "8.23.1"
+  },
+  "devDependencies": {
+    "@types/node": "24.10.1",
+    "@types/pg": "8.15.6",
+    "typescript": "5.9.3",
+    "vue-tsc": "3.2.5",
+    "tsx": "4.21.0",
+    "@playwright/test": "1.58.2",
+    "embedded-postgres": "17.6.0-beta.15"
+  }
+}

@@ -1,0 +1,2 @@
+<script setup lang="ts">defineProps<{error:any}>();const home=()=>clearError({redirect:'/'})</script>
+<template><NuxtLayout><div class="wrap error-page"><NuxtLink class="brand" to="/">纸上生花</NuxtLink><span class="error-number">{{error.statusCode||500}}</span><h1>{{error.statusCode===404?'这张纸，还没有写下故事。':'纸笺在路上打了个结。'}}</h1><p>{{error.message||'请稍后重试，或回到首页继续浏览。'}}</p><div class="button-row"><button class="btn primary" @click="home">回到首页 ↗</button><button class="btn" @click="clearError()">重新尝试 ↻</button></div></div></NuxtLayout></template>

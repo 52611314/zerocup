@@ -1,0 +1,51 @@
+import { chromium } from '@playwright/test'
+import assert from 'node:assert/strict'
+import {mkdir} from 'node:fs/promises'
+const browser=await chromium.launch({channel:'chrome',headless:true})
+const context=await browser.newContext({baseURL:process.env.SITE_URL,reducedMotion:'reduce',hasTouch:true})
+const page=await context.newPage()
+await mkdir('test-results',{recursive:true})
+try{
+ console.log('Chrome',browser.version())
+ for(const width of [360,390,720,768,1440,1920]){
+  await page.setViewportSize({width,height:850})
+  for(const path of ['/','/gallery','/studio']){
+   await page.goto(path)
+   if(path==='/studio')await page.getByRole('button',{name:'添加到纸面'}).waitFor()
+   assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1),width+' '+path)
+  }
+  console.log(width+'px: home, gallery, studio fit')
+ }
+ await page.setViewportSize({width:390,height:844})
+ await page.getByRole('button',{name:'添加到纸面'}).click()
+ await page.getByRole('button',{name:'切口右移'}).click()
+ await page.getByRole('button',{name:'展开作品'}).click()
+ await page.locator('#work-title').fill('浏览器验证用纸')
+ await page.route('**/api/works',r=>r.fulfill({status:503,contentType:'application/json',body:'{"message":"模拟连接中断"}'}))
+ await page.getByRole('button',{name:'保存草稿'}).click()
+ await page.getByRole('button',{name:'重试保存'}).waitFor()
+ await page.unroute('**/api/works')
+ await page.route('**/api/works',async r=>{await new Promise(ok=>setTimeout(ok,1200));await r.continue()})
+ await page.getByRole('button',{name:'重试保存'}).click()
+ await page.getByText('正在保存到服务器…',{exact:true}).waitFor()
+ await page.waitForURL('**/studio?draft=*')
+ const id=new URL(page.url()).searchParams.get('draft')
+ await page.reload()
+ await page.locator('#work-title').waitFor()
+ assert.equal(await page.locator('#work-title').inputValue(),'浏览器验证用纸')
+ await page.getByRole('button',{name:'投稿到纸上展览'}).click()
+ await page.getByText('这张纸已送审',{exact:false}).first().waitFor()
+ await page.goto('/admin')
+ await page.locator('#admin-user').fill(process.env.ADMIN_USERNAME)
+ await page.locator('#admin-password').fill(process.env.ADMIN_PASSWORD)
+ await page.getByRole('button',{name:'进入管理后台'}).click()
+ await page.locator('.review-row').filter({hasText:'浏览器验证用纸'}).first().getByRole('button',{name:'通过并展出'}).click()
+ await page.getByText('作品已公开展出。',{exact:false}).first().waitFor()
+ await page.goto('/gallery/'+id)
+ assert.equal(await page.locator('h1').innerText(),'浏览器验证用纸')
+ await page.screenshot({path:'test-results/mobile-exhibit.png'})
+ console.log('Mobile edit → injected save failure → delayed retry → reload → submit → review → gallery passed')
+ const {default:pg}=await import('pg')
+ const db=new pg.Client({connectionString:process.env.DATABASE_URL});await db.connect()
+ await db.query('DELETE FROM works WHERE id=$1 AND title=$2',[id,'浏览器验证用纸']);await db.end()
+}finally{await browser.close()}

@@ -1,0 +1,17 @@
+services:
+  db:
+    image: postgres:17.6
+    environment:
+      POSTGRES_DB: paperstudio
+      POSTGRES_USER: paper
+      POSTGRES_PASSWORD: ${PG_LOCAL_PASSWORD:?Set PG_LOCAL_PASSWORD in .env}
+    ports:
+      - "127.0.0.1:55432:5432"
+    volumes:
+      - paper-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U paper -d paperstudio"]
+      interval: 5s
+      retries: 10
+volumes:
+  paper-data:

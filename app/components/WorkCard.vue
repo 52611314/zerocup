@@ -1,0 +1,2 @@
+<script setup lang="ts">defineProps<{work:any;privateWork?:boolean}>()</script>
+<template><NuxtLink :to="privateWork?`/studio?draft=${work.id}`:`/gallery/${work.id}`" class="work-card"><div class="work-mount"><PaperArt :model="work.model" :label="work.title"/><span class="mount-corner">{{work.is_example?'原创示例':'访客创作'}}</span></div><div class="work-caption"><div><h3>{{work.title}}</h3><p>{{privateWork?({draft:'草稿',pending:'审核中',published:'已展出',rejected:'待修改'} as any)[work.status]:work.category}}</p></div><span aria-hidden="true">↗</span></div></NuxtLink></template>

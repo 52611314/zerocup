@@ -1,0 +1,9 @@
+<script setup lang="ts">
+const route=useRoute(),{feedback}=useFeedback(),busy=ref(false),saved=ref(false)
+const {data:w,pending,error,refresh}=await useFetch<any>(`/api/gallery/${route.params.id}`)
+if(error.value?.statusCode===404)throw createError({statusCode:404,message:'作品尚未公开，或已经撤展。'})
+usePageMeta(()=>w.value?.title||'作品',()=>w.value?.description||'原创数字剪纸作品')
+onMounted(async()=>{try{const list=await $fetch<any[]>('/api/me/favorites');saved.value=list.some(x=>x.id===route.params.id)}catch{}})
+async function favorite(){busy.value=true;try{await $fetch(`/api/me/favorites/${route.params.id}`,{method:saved.value?'DELETE':'PUT'});saved.value=!saved.value;feedback(saved.value?'已收进我的收藏。':'已取消收藏。')}catch(e){feedback(errorMessage(e),'error')}finally{busy.value=false}}
+</script>
+<template><div class="wrap page"><Breadcrumbs :items="[{label:'纸上展览',to:'/gallery'},{label:w?.title||'作品'}]"/><AsyncState :pending="pending" :error="error" @retry="refresh"><article v-if="w" class="work-detail"><div class="detail-mount"><PaperArt :model="w.model" :label="w.title"/><span class="mount-corner">{{w.is_example?'项目原创示例':'访客原创作品'}}</span></div><div class="detail-label"><p class="eyebrow">PAPER EXHIBITION / {{w.category}}</p><h1>{{w.title}}</h1><p class="article-lead">{{w.description||'这张纸，留下了一份自己的心意。'}}</p><dl><div><dt>创作方式</dt><dd>四组旋转 · 八重对称</dd></div><div><dt>切口单元</dt><dd>{{w.model.cuts.length}} 个基础切口</dd></div><div><dt>作品说明</dt><dd>{{w.is_example?'项目设计的数字示例，非馆藏复刻':'经审核公开的访客作品'}}</dd></div></dl><NuxtLink class="btn primary" :to="`/studio?remix=${w.id}`">从这张纸开始创作 ↗</NuxtLink><button class="btn" @click="favorite" :disabled="busy">{{busy?'正在整理…':saved?'已收藏 · 取消收藏':'＋ 收藏这份灵感'}}</button><NuxtLink class="text-link back-link" to="/gallery">← 回到纸上展览</NuxtLink><p class="fine-print">复刻入口会新建你的草稿。数字模型不检测纸张连接与强度，实物制作前请另行检查。</p></div></article></AsyncState></div></template>
