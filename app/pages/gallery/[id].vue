@@ -42,17 +42,20 @@ async function favorite() {
 </script>
 
 <template>
-  <div class="wrap page">
+  <div class="wrap page exhibit-page">
     <Breadcrumbs :items="[{ label: '纸上展览', to: galleryHref }, { label: work?.title || '作品' }]" />
     <AsyncState :pending="pending" :error="error" @retry="refresh">
       <article v-if="work" class="work-detail exhibit-detail" aria-labelledby="exhibit-title">
         <figure class="exhibit-figure">
           <div class="detail-mount exhibit-mount">
-            <PaperArt :model="work.model" :label="work.title" />
+            <span class="mount-index" aria-hidden="true">紙上 / 03</span>
+            <div class="exhibit-sheet">
+              <PaperArt :model="work.model" :label="work.title" />
+            </div>
           </div>
           <figcaption class="exhibit-caption">
             <span>{{ work.is_example ? '项目原创示例' : '经审核公开的访客作品' }}</span>
-            <span lang="en" aria-hidden="true">PAPER EXHIBITION</span>
+            <span lang="en" aria-hidden="true">PAPER CUT · FULL VIEW</span>
           </figcaption>
         </figure>
         <div class="detail-label exhibit-label">
@@ -61,9 +64,9 @@ async function favorite() {
             <h1 id="exhibit-title">{{ work.title }}</h1>
             <p v-if="work.description" class="article-lead">{{ work.description }}</p>
           </header>
-          <dl>
-            <div><dt>构图</dt><dd>四组旋转 · 八重对称</dd></div>
-            <div><dt>切口</dt><dd>{{ work.model.cuts.length }} 个基础切口</dd></div>
+          <dl class="exhibit-facts">
+            <div><dt>对称</dt><dd><strong>8</strong> 重</dd></div>
+            <div><dt>基础切口</dt><dd><strong>{{ work.model.cuts.length }}</strong> 个</dd></div>
           </dl>
           <div class="exhibit-actions">
             <NuxtLink class="btn primary" :to="{ path: '/studio', query: { remix: work.id } }">
@@ -82,33 +85,73 @@ async function favorite() {
 </template>
 
 <style scoped>
-.exhibit-detail {
-  grid-template-columns: minmax(0, 1.24fr) minmax(0, 1fr);
-  align-items: center;
-  gap: clamp(32px, 6vw, 96px);
-  max-width: 1220px;
-  margin: clamp(22px, 3.5vw, 48px) auto 0;
+.exhibit-page {
+  --exhibit-cream: #fff7e7;
+  --exhibit-ink: #2a1c18;
+  --exhibit-red: #87271f;
+  --exhibit-line: #cbb398;
+  color: var(--exhibit-ink);
 }
 
-.exhibit-figure { margin: 0; }
+.exhibit-detail {
+  grid-template-columns: minmax(0, 1.32fr) minmax(0, 1fr);
+  align-items: center;
+  gap: clamp(30px, 6vw, 90px);
+  max-width: 1280px;
+  margin: clamp(20px, 3.2vw, 44px) auto 0;
+}
+
+.exhibit-figure {
+  min-width: 0;
+  margin: 0;
+  background: #64231d;
+  color: #f9e4c7;
+}
 
 .exhibit-mount {
-  isolation: isolate;
-  border: 1px solid var(--line);
-  background: radial-gradient(ellipse at 48% 38%, #f8edd7 8%, #e9d8bb 80%);
+  aspect-ratio: 1.13;
+  background:
+    repeating-linear-gradient(106deg, #fff7e708 0 1px, transparent 1px 8px),
+    radial-gradient(ellipse at 43% 28%, #a84d3d, #87271f 56%, #64231d);
 }
 
 .exhibit-mount::before {
   position: absolute;
-  z-index: -1;
-  inset: clamp(10px, 1.6vw, 22px);
-  border: 1px solid #a67d5740;
+  inset: clamp(10px, 1.5vw, 22px);
+  border: 1px solid #f0ba865c;
   content: '';
 }
 
-.exhibit-mount :deep(.paper-art) {
-  width: 83%;
-  filter: drop-shadow(0 11px 10px #42271d24);
+.mount-index {
+  position: absolute;
+  top: clamp(15px, 2.1vw, 30px);
+  left: clamp(18px, 2.4vw, 34px);
+  font: 12px/1.6 var(--serif);
+  letter-spacing: .18em;
+}
+
+.exhibit-sheet {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 68%;
+  aspect-ratio: 1;
+  border: 1px solid #e9d3b0;
+  background: radial-gradient(ellipse at 43% 32%, var(--exhibit-cream), #f2e1c4);
+  box-shadow: 0 26px 38px #2b0c0666, 0 2px 4px #2b0c0650;
+}
+
+.exhibit-sheet::before {
+  position: absolute;
+  inset: clamp(5px, 1vw, 14px);
+  border: 1px solid #b4815338;
+  content: '';
+}
+
+.exhibit-sheet :deep(.paper-art) {
+  width: 86%;
+  max-height: 90%;
+  filter: drop-shadow(0 8px 7px #5225152b);
 }
 
 .exhibit-caption {
@@ -116,9 +159,8 @@ async function favorite() {
   flex-wrap: wrap;
   justify-content: space-between;
   gap: 4px 18px;
-  padding: 12px 0;
-  border-bottom: 1px solid var(--line);
-  color: var(--muted);
+  padding: 13px clamp(14px, 2vw, 26px);
+  border-top: 1px solid #f0ba8640;
   font-size: 12px;
 }
 
@@ -127,24 +169,40 @@ async function favorite() {
   letter-spacing: .13em;
 }
 
-.exhibit-label header { padding-top: 18px; border-top: 1px solid var(--red); }
-.exhibit-label .eyebrow { margin: 0; font-weight: 700; }
+.exhibit-label header { padding-top: 18px; border-top: 1px solid var(--exhibit-red); }
+.exhibit-label .eyebrow { margin: 0; color: var(--exhibit-red); font-weight: 700; }
 .exhibit-label .eyebrow span { color: var(--muted); }
-.exhibit-label h1 { font-size: clamp(35px, 5vw, 70px); overflow-wrap: anywhere; }
-.exhibit-label .article-lead { max-width: 34em; overflow-wrap: anywhere; }
-.exhibit-label dl { margin: 26px 0 20px; border-top: 1px solid var(--line); }
-.exhibit-label dl div { padding: 9px 0; }
-.exhibit-label dt { flex: 0 0 3em; color: var(--muted); }
-.exhibit-label dd { min-width: 0; }
+.exhibit-label h1 {
+  margin: .24em 0 .25em;
+  font-size: clamp(38px, 6vw, 86px);
+  line-height: 1.05;
+  letter-spacing: -.04em;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+.exhibit-label .article-lead { max-width: 32em; margin: 0; line-height: 1.8; overflow-wrap: anywhere; }
+.exhibit-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  margin: clamp(22px, 3vw, 36px) 0 20px;
+  border-block: 1px solid var(--exhibit-line);
+}
+.exhibit-facts div { display: block; padding: 10px 0; border: 0; }
+.exhibit-facts div + div { padding-left: 18px; border-left: 1px solid var(--exhibit-line); }
+.exhibit-facts dt { color: var(--muted); font-size: 12px; letter-spacing: .1em; }
+.exhibit-facts dd strong { color: var(--exhibit-red); font: 33px/1.2 Georgia, serif; }
 .exhibit-actions { display: flex; flex-wrap: wrap; gap: 8px; }
-.exhibit-favorite:hover { border-color: var(--red); color: var(--red); }
-.exhibit-label .fine-print { margin: 12px 0 2px; letter-spacing: 0; }
+.exhibit-actions .primary { border-color: var(--exhibit-red); background: var(--exhibit-red); }
+.exhibit-actions .primary:hover { background: #692019; }
+.exhibit-favorite:hover { border-color: var(--exhibit-red); color: var(--exhibit-red); }
+.exhibit-label .fine-print { margin: 12px 0 0; letter-spacing: 0; }
 .exhibit-label .back-link { display: inline-flex; margin: 0; }
 
 @media (max-width: 760px) {
-  .exhibit-detail { grid-template-columns: 1fr; gap: 22px; }
-  .exhibit-figure { width: min(100%, 490px); margin-inline: auto; }
-  .exhibit-label header { padding-top: 0; border: 0; }
-  .exhibit-label dl { margin-top: 16px; }
+  .exhibit-detail { grid-template-columns: 1fr; gap: 24px; }
+  .exhibit-mount { aspect-ratio: 1.1; }
+  .exhibit-sheet { width: 65%; }
+  .exhibit-label header { padding: 0; border: 0; }
+  .exhibit-facts { margin-top: 17px; }
 }
 </style>
