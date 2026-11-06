@@ -12,6 +12,7 @@ interface ArticleSummary {
 usePageMeta('纸上学堂', '阅读有来源的剪纸故事、技法与原创纹样练习，了解纸面与留白。')
 
 const route = useRoute()
+useBrowseReturn('/learn')
 const search = computed(() => String(route.query.q || '').slice(0, 80))
 const category = computed(() => String(route.query.category || ''))
 const query = ref(search.value)

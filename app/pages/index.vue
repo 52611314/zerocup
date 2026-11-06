@@ -73,6 +73,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
+ <div class="home-page">
  <section class="hero wrap">
   <div class="hero-copy">
    <div class="eyebrow hero-kicker"><span class="red-dot" aria-hidden="true"/> 非遗剪纸互动展 <span class="edition">VOL. 01</span></div>
@@ -180,6 +181,7 @@ onBeforeUnmount(() => {
   <h2>下一朵花，从你手中开始。</h2>
   <NuxtLink to="/studio" class="text-link">打开工作台 ↗</NuxtLink>
  </section>
+ </div>
 </template>
 
 <style scoped src="../assets/css/home.css"></style>

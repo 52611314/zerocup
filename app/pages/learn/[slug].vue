@@ -16,6 +16,7 @@ interface Article {
 }
 
 const route = useRoute()
+const learnHref = useBrowseReturn('/learn')
 const slug = encodeURIComponent(String(route.params.slug))
 const { data: article, pending, error, refresh } = await useFetch<Article>(`/api/articles/${slug}`)
 if (error.value?.statusCode === 404) throw createError({ statusCode: 404, message: '这篇纸上札记尚未公开。' })
@@ -24,7 +25,7 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
 
 <template>
   <div class="wrap page journal-detail">
-    <Breadcrumbs :items="[{ label: '纸上学堂', to: '/learn' }, { label: article?.title || '纸上札记' }]" />
+    <Breadcrumbs :items="[{ label: '纸上学堂', to: learnHref }, { label: article?.title || '纸上札记' }]" />
     <AsyncState :pending="pending" :error="error" @retry="refresh">
       <article v-if="article" class="article-layout" aria-labelledby="journal-title">
         <header class="journal-heading">

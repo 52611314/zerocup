@@ -14,7 +14,9 @@ const paper = computed(() => ({ ...motif.value, cuts: motif.value.cuts.slice(0, 
   <div class="loading-sheet"><PaperArt :model="paper" label="正在剪成的窗花"/>
    <i v-if="count" :key="count" class="loading-chip" aria-hidden="true" :style="{left:(48 + paper.cuts[count-1]!.x * .46)+'%',top:(50 + paper.cuts[count-1]!.y * .46)+'%'}"/>
   </div>
-  <p>正在展开下一页</p>
-  <div class="cut-track" aria-hidden="true"><i :style="{width:progress+'%'}"/></div>
+  <div class="navigation-copy">
+   <p>正在翻页</p>
+   <div class="cut-track" aria-hidden="true"><i :style="{width:progress+'%'}"/></div>
+  </div>
  </div>
 </template>

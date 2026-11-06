@@ -11,6 +11,7 @@ interface Exhibit {
 }
 
 const route = useRoute()
+const galleryHref = useBrowseReturn('/gallery')
 const { feedback } = useFeedback()
 const busy = ref(false)
 const saved = ref(false)
@@ -42,7 +43,7 @@ async function favorite() {
 
 <template>
   <div class="wrap page">
-    <Breadcrumbs :items="[{ label: '纸上展览', to: '/gallery' }, { label: work?.title || '作品' }]" />
+    <Breadcrumbs :items="[{ label: '纸上展览', to: galleryHref }, { label: work?.title || '作品' }]" />
     <AsyncState :pending="pending" :error="error" @retry="refresh">
       <article v-if="work" class="work-detail exhibit-detail" aria-labelledby="exhibit-title">
         <figure class="exhibit-figure">
@@ -73,7 +74,7 @@ async function favorite() {
             </button>
           </div>
           <p class="fine-print">再创作会新建一份草稿。用于实物制作时，请先检查纸面连接与强度。</p>
-          <NuxtLink class="text-link back-link" to="/gallery">← 回到纸上展览</NuxtLink>
+          <NuxtLink class="text-link back-link" :to="galleryHref">← 回到纸上展览</NuxtLink>
         </div>
       </article>
     </AsyncState>

@@ -12,6 +12,7 @@ interface GalleryPage {
 usePageMeta('纸上展览', '欣赏经审核公开的原创剪纸作品，从一张纸的不同留白里寻找灵感。')
 
 const route = useRoute()
+useBrowseReturn('/gallery')
 const search = computed(() => String(route.query.q || '').slice(0, 80))
 const category = computed(() => String(route.query.category || ''))
 const page = computed(() => Math.max(1, Math.min(10000, Math.floor(Number(route.query.page) || 1))))

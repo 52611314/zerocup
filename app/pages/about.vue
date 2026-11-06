@@ -1,2 +1,179 @@
-<script setup lang="ts">usePageMeta('关于与来源','纸上生花的设计说明、文化资料来源、数字创作边界与操作帮助。')</script>
-<template><div class="wrap page narrow"><Breadcrumbs :items="[{label:'关于与来源'}]"/><header class="page-heading"><p class="eyebrow">A NOTE FROM THE WORKSHOP</p><h1>一纸背后的心意。</h1><p>以剪纸为入口，让了解、创作与分享在这里相遇。</p></header><article class="about-content"><section><h2>为什么是剪纸</h2><p>纸上生花是 2026 年零杯网页设计大赛“匠心传成，非遗焕新”主题的原创网站。我们从剪纸中纸面与留白的关系出发，把阅读、动手、保存和展览连在一起。所有页面样式、数字纹样与几何交互由项目自行设计。</p></section><section><h2>读资料，也尊重资料的边界</h2><p>本网站的文化短文为整理撰写，文内列出资料来源。中国剪纸于 2009 年列入联合国教科文组织人类非物质文化遗产代表作名录。本项目及数字作品没有官方认证身份。各地技艺与使用语境不同，请结合具体资料阅读。</p><ul class="source-list"><li><a href="https://www.ihchina.cn/Article/Index/detail?id=17241" target="_blank" rel="noopener noreferrer">中国非物质文化遗产网：中国民间剪纸介绍 ↗</a></li><li><a href="https://www.fujian.gov.cn/english/cultureandtravel/cultureandarts/202501/t20250106_6619079.htm" target="_blank" rel="noopener noreferrer">福建省人民政府：Chinese paper-cutting ↗</a></li><li><a href="https://ich.unesco.org/en/RL/chinese-paper-cut-00219" target="_blank" rel="noopener noreferrer">UNESCO：中国剪纸项目名录 ↗</a></li></ul><p>名录网站可能要求人机验证，可从上方政府介绍继续了解。资料核对日期：2026 年 11 月 5 日。</p></section><section><h2>数字剪纸如何工作</h2><p>工坊采用一种八重对称的简化模式。你在 45° 基础扇区中放置圆形、三角形与水滴，四组旋转和镜像生成完整纹样。展开显示的是当前切口产生的作品。数字模型不检测纸张连通性或强度，不模拟真实纸张，实物制作前需要单独检查。</p><p>“团花初绽”等名称是项目对原创几何练习的命名，不表示传统纹样的确定寓意。展览中的“原创示例”是项目制作的演示作品，没有虚构的作者经历或馆藏身份。</p></section><section><h2>从第一剪，到一场小展览</h2><ol><li>在学堂阅读，或从教程进入工坊。</li><li>选择切口并点“添加到纸面”。用位置按钮、大小和角度调整，无需拖动。</li><li>点“展开作品”，查看完整窗花。可以立即跳过动画。</li><li>填写名称并保存。只有显示“已保存到服务器”才表示保存成功。</li><li>从“我的纸笺”恢复作品，或下载 SVG、PNG 图像。</li><li>投稿后等待审核，审核通过才进入公开展览。驳回意见在纸笺中查看。</li></ol></section><section><h2>你的纸笺如何保管</h2><p>私人草稿与学习进度保存在服务器数据库，访客身份通过当前浏览器的 Cookie 识别。我们没有跨设备账号或找回功能。请保留当前浏览器 Cookie；到期或清除后，无法重新证明作品归属。公开投稿会显示作品名称、创作说明与图案，请勿填写个人隐私。</p><p>保存失败时，编辑会留在当前页面，重试成功前请勿刷新或关闭。版本冲突时可另存一张新草稿。下载的图像用于展示，继续编辑需要从纸笺中恢复。</p></section><section><h2>素材与实现</h2><p>本网站没有使用照片、外链字体、成品模板或预设样式组件库。纸张肌理由原创 CSS 构成，所有剪纸 SVG 都由原创参数模型生成。标题采用设备自带宋体，正文使用系统黑体，实际字体随系统变化。</p><p>Nuxt 负责页面与服务端接口，Vue 负责交互，PostgreSQL 保存资料，node-postgres 负责数据库访问。第三方依赖的版本、用途、许可与使用位置列在随源码交付的依赖文档中。</p></section><section class="article-cta"><h2>留一点空白，给新的可能。</h2><NuxtLink class="btn primary" to="/studio">进入剪纸工坊 ↗</NuxtLink></section></article></div></template>
+<script setup lang="ts">
+import { starterModels } from '../../shared/patterns'
+
+usePageMeta('关于与来源', '纸上生花的设计说明、文化资料来源、数字创作边界与操作帮助。')
+
+const sources = [
+  {
+    publisher: '中国非物质文化遗产网',
+    title: '中国民间剪纸介绍',
+    url: 'https://www.ihchina.cn/Article/Index/detail?id=17241'
+  },
+  {
+    publisher: '福建省人民政府',
+    title: 'Chinese paper-cutting',
+    url: 'https://www.fujian.gov.cn/english/cultureandtravel/cultureandarts/202501/t20250106_6619079.htm'
+  },
+  {
+    publisher: '联合国教科文组织',
+    title: '中国剪纸项目名录',
+    url: 'https://ich.unesco.org/en/RL/chinese-paper-cut-00219'
+  }
+]
+</script>
+
+<template>
+  <div class="wrap page about-page">
+    <Breadcrumbs :items="[{ label: '关于与来源' }]" />
+    <header class="page-heading about-heading">
+      <div>
+        <p class="eyebrow">关于与来源 / 设计手记</p>
+        <h1>一纸背后的心意。</h1>
+        <p class="article-lead">以剪纸为入口，让阅读、动手和分享在这里相遇。</p>
+      </div>
+      <figure class="about-figure">
+        <PaperArt :model="starterModels[3]!" label="原创八重对称剪纸示意" />
+        <figcaption>八重对称 · 数字示意</figcaption>
+      </figure>
+    </header>
+
+    <article class="about-content">
+      <section class="about-section">
+        <h2><span aria-hidden="true">01</span> 为什么是剪纸</h2>
+        <div>
+          <p>《纸上生花》是为 2026 年零杯网页设计大赛「匠心传成，非遗焕新」主题设计的原创网站。我们从剪纸的纸面与留白出发，把阅读、动手、保存和展览连在一起。</p>
+          <p>工坊以 45° 扇区为纸样。你可以放置圆形、三角形或水滴，四组旋转与镜像会把当前切口展开成八重对称的纹样。数字模型用于探索构图，实物制作前需另行检查纸面连接与强度。</p>
+          <p>「团花初绽」等是项目原创练习的名称。展览中标有「原创示例」的作品由项目团队制作，用来演示数字剪纸。</p>
+        </div>
+      </section>
+
+      <section id="sources" class="about-section">
+        <h2><span aria-hidden="true">02</span> 循着来源读下去</h2>
+        <div>
+          <p>2009 年，中国剪纸列入联合国教科文组织人类非物质文化遗产代表作名录。纸上学堂的短文由参赛团队独立整理，并逐篇列出来源。各地技艺和使用语境各有特色，欢迎结合资料继续了解。</p>
+          <ul class="source-list">
+            <li v-for="source in sources" :key="source.url">
+              <a :href="source.url" target="_blank" rel="noopener noreferrer">
+                <span><strong>{{ source.publisher }}</strong><small>{{ source.title }}</small></span>
+                <span class="source-arrow" aria-hidden="true">↗</span>
+              </a>
+            </li>
+          </ul>
+          <p class="source-note">资料核对于 2026 年 11 月 5 日。如名录页面需要人机验证，可从福建省人民政府的介绍继续阅读。</p>
+        </div>
+      </section>
+
+      <section class="about-section">
+        <h2><span aria-hidden="true">03</span> 从第一剪到小展览</h2>
+        <div>
+          <ol class="about-steps">
+            <li>从<NuxtLink class="about-inline-link" to="/learn">学堂</NuxtLink>或<NuxtLink class="about-inline-link" to="/tutorials">教程</NuxtLink>进入工坊，在纸面上放下一个切口。</li>
+            <li>用位置、大小和角度控件调整，点「展开作品」看完整窗花。</li>
+            <li>给作品命名并保存。看到「已保存到服务器」后，可在我的纸笺里继续编辑，或下载 SVG、PNG 图像。</li>
+            <li>投稿审核通过后，作品会进入公开展览。驳回意见可在我的纸笺查看。</li>
+          </ol>
+        </div>
+      </section>
+
+      <section class="about-section">
+        <h2><span aria-hidden="true">04</span> 纸笺与素材</h2>
+        <div>
+          <p>私人草稿和学习进度保存在服务器，并与当前浏览器的 Cookie 绑定。请用同一浏览器和有效的 Cookie 恢复作品。公开投稿会显示作品名称、说明与图案，请勿在作品里填写个人隐私。</p>
+          <p>保存失败时，可留在当前页面重试。遇到版本冲突时，可另存一张草稿。下载的图像用于展示，继续编辑请从我的纸笺恢复。</p>
+          <p>纸张肌理和页面样式由项目自行设计，纹样由原创几何模型生成，文字使用设备自带字体。Nuxt 和 Vue 提供页面和交互，PostgreSQL 保存资料。依赖版本、用途和许可随源码交付。</p>
+        </div>
+      </section>
+    </article>
+
+    <footer class="about-next">
+      <h2>把读到的，剪成一朵花。</h2>
+      <div class="about-actions">
+        <NuxtLink class="btn primary" to="/studio">进入剪纸工坊 <span aria-hidden="true">↗</span></NuxtLink>
+        <NuxtLink class="text-link" to="/gallery">去纸上展览 <span aria-hidden="true">→</span></NuxtLink>
+      </div>
+    </footer>
+  </div>
+</template>
+
+<style scoped>
+.about-page { max-width: 1120px; }
+
+.about-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1.7fr) minmax(180px, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: clamp(22px, 4vw, 50px) 0 0;
+  padding: clamp(20px, 3.2vw, 44px) 0;
+  border-block: 1px solid var(--line);
+}
+
+.about-heading .eyebrow { margin: 0; color: var(--red); font-weight: 700; }
+.about-heading h1 { margin: .3em 0; font-size: clamp(35px, 5.4vw, 76px); }
+.about-heading .article-lead { margin: 0; font-size: clamp(16px, 1.5vw, 21px); }
+
+.about-figure {
+  display: grid;
+  place-items: center;
+  margin: 0;
+  padding: 10px 18px;
+  background: radial-gradient(ellipse at center, #f8edd7 8%, #ebdcc0 80%);
+  border: 1px solid var(--line);
+}
+
+.about-figure :deep(.paper-art) {
+  width: min(62%, 210px);
+  filter: drop-shadow(0 8px 6px #42271d23);
+}
+
+.about-figure figcaption { color: var(--muted); font-size: 12px; letter-spacing: .12em; }
+
+.about-content .about-section {
+  display: grid;
+  grid-template-columns: minmax(175px, 1fr) minmax(0, 2.45fr);
+  gap: clamp(14px, 4vw, 60px);
+  margin: 0;
+  padding: clamp(24px, 4vw, 48px) 0;
+  border-bottom: 1px solid var(--line);
+  scroll-margin-top: 20px;
+}
+
+.about-section h2 { margin: 0; font-size: clamp(24px, 2.65vw, 37px); }
+.about-section h2 span { display: block; margin-bottom: 8px; color: var(--red); font: 17px Georgia, serif; }
+.about-section p { margin: 0 0 12px; line-height: 1.85; }
+.about-section p:last-child { margin-bottom: 0; }
+
+.source-list { list-style: none; margin: 18px 0 10px; padding: 0; border-top: 1px solid var(--line); }
+.source-list a {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 11px 10px;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+}
+.source-list a:hover { background: #efdfc5; }
+.source-list small { display: block; color: var(--muted); font-size: 14px; }
+.source-arrow { color: var(--red); }
+.source-note { color: var(--muted); font-size: 13px; }
+.about-steps { margin: 0; padding-left: 1.35em; }
+.about-steps li { padding: 0 0 7px .35em; }
+.about-steps li::marker { color: var(--red); font-family: Georgia, serif; }
+.about-inline-link { color: var(--red); text-decoration: underline; text-underline-offset: .2em; }
+
+.about-next {
+  margin-top: 26px;
+  padding: clamp(18px, 3vw, 35px);
+  background: #ecdfc8;
+}
+.about-next h2 { margin: 0 0 .45em; }
+.about-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 5px 16px; }
+.about-actions .text-link { gap: 6px; }
+
+@media (max-width: 670px) {
+  .about-heading, .about-content .about-section { grid-template-columns: 1fr; }
+  .about-figure :deep(.paper-art) { width: min(50%, 145px); }
+  .about-section h2 span { display: inline; margin-right: 5px; }
+}
+</style>

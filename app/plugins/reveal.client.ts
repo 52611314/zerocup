@@ -1,7 +1,7 @@
 // Reveal real line boxes without splitting text nodes or changing Vue's DOM.
 export default defineNuxtPlugin(app => {
   const selector = 'h1,h2,h3,p,li,dt,dd,small,label,legend,a,button,img,.paper-art,.story-illustration,.work-mount,.detail-mount,.eyebrow,.art-stamp,.vertical-note,.display-number'
-  const exclude = '.site-header,[data-studio-controls],.hero-display,.editing-board,.unfold-stage,.cut-adjust,.toast,.paper-navigation,[role="alert"],[role="status"],.paper-weather,.paper-scraps,.skip,.sr-only'
+  const exclude = '.hero-display,.hero-actions,[role="alert"],[role="status"],.sr-only'
   const preference = matchMedia('(prefers-reduced-motion: reduce)')
   const known = new WeakSet<Element>()
   const timers = new Map<Element,ReturnType<typeof setTimeout>>()
@@ -53,13 +53,14 @@ export default defineNuxtPlugin(app => {
       const parent=el.parentElement!
       const index=group.get(parent)||0
       group.set(parent,index+1)
-      const gap=parent.matches('.hero-copy,.page-heading,.article-main')?500:100
+      const gap=parent.matches('.hero-copy')?500:100
       timers.set(el,setTimeout(()=>reveal(el),Math.min(index,5)*gap))
     }
   })
   function scan(root:Element){
-    if(preference.matches || root.closest(exclude))return
-    for(const el of [root,...root.querySelectorAll(selector)]){
+    const home=root.closest('.home-page')?root:root.querySelector('.home-page')
+    if(preference.matches || !home || home.closest(exclude))return
+    for(const el of [home,...home.querySelectorAll(selector)]){
       if(known.has(el)||!el.matches(selector)||el.closest(exclude)||el.parentElement?.closest(selector))continue
       known.add(el);el.setAttribute('data-paper-wait','');observer.observe(el)
     }

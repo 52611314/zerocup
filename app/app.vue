@@ -3,6 +3,8 @@ const route = useRoute()
 const menu = ref(false)
 const menuButton = ref<HTMLButtonElement>()
 const { notice } = useFeedback()
+const currentSection = computed(() => '/' + route.path.split('/')[1])
+const pageTransition = { name: 'paper-page', mode: 'out-in' as const }
 
 watch(() => route.fullPath, () => {
   menu.value = false
@@ -12,6 +14,7 @@ watch(() => route.fullPath, () => {
 const links = [
   { href: '/', label: '首页' },
   { href: '/learn', label: '纸上学堂' },
+  { href: '/tutorials', label: '入门教程' },
   { href: '/studio', label: '剪纸工坊' },
   { href: '/gallery', label: '纸上展览' }
 ]
@@ -39,12 +42,12 @@ function dismissMenu() {
      {{ menu ? '收起导航' : '导航' }} <span aria-hidden="true">{{ menu ? '×' : '☰' }}</span>
     </button>
     <nav id="navigation" :class="{ open: menu }" aria-label="主导航">
-     <NuxtLink v-for="{ href, label } in links" :key="href" :to="href" :class="{ active: href === '/' ? route.path === '/' : route.path.startsWith(href) }" @click="menu = false">{{ label }}</NuxtLink>
+     <NuxtLink v-for="{ href, label } in links" :key="href" :to="href" :class="{ active: currentSection === href }" :aria-current="currentSection === href ? 'page' : undefined" @click="dismissMenu">{{ label }}</NuxtLink>
     </nav>
     <NuxtLink to="/me" class="personal-link" @click="menu = false">我的纸笺 <span aria-hidden="true">↗</span></NuxtLink>
    </header>
   </div>
-  <main id="main"><NuxtPage /></main>
+  <main id="main"><NuxtPage :transition="pageTransition" /></main>
   <div v-if="notice.text" class="toast" :class="notice.kind" role="status">{{ notice.text }}<button @click="notice.text = ''" aria-label="关闭提示">×</button></div>
   <div class="footer-frame">
    <footer class="site-footer">
