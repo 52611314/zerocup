@@ -1,19 +1,147 @@
 <script setup lang="ts">
 import { starterModels } from '../../shared/patterns'
-usePageMeta('让一张纸，生出万千风景','走近中国剪纸，在原创互动工坊中折叠、创作、展开，留住一朵属于自己的窗花。')
-const {data:articles,pending,error,refresh}=await useFetch<any[]>('/api/articles')
-const {data:gallery}=await useFetch<any>('/api/gallery')
-const revealed=ref(false)
+
+usePageMeta('一纸之间，万象生花','走近中国剪纸，在原创互动工坊中折叠、创作、展开，留住一朵属于自己的窗花。')
+const { data: articles, pending, error, refresh } = await useFetch<any[]>('/api/articles')
+const { data: gallery } = await useFetch<any>('/api/gallery')
+
+const exhibit = starterModels[0]!
+const sectors = ref(8)
+const unfolding = ref(false)
+const stages = [1, 2, 4, 8]
+const foldInterval = 240
+let timers: ReturnType<typeof setTimeout>[] = []
+
+function togglePaper() {
+  if (unfolding.value) return
+  if (sectors.value === 8) {
+    sectors.value = 1
+    return
+  }
+  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    sectors.value = 8
+    return
+  }
+  unfolding.value = true
+  timers = stages.slice(1).map((stage, index) => setTimeout(() => {
+    sectors.value = stage
+  }, index * foldInterval))
+  timers.push(setTimeout(() => {
+    unfolding.value = false
+    timers = []
+  }, (stages.length - 1) * foldInterval))
+}
+
+onBeforeUnmount(() => timers.forEach(timer => clearTimeout(timer)))
 </script>
+
 <template>
  <section class="hero wrap">
-  <div class="hero-copy"><div class="eyebrow"><span class="red-dot"/> 匠心传成，非遗焕新 <span class="eyebrow-rule"/></div><h1>一纸之间，<br/>万象<span class="red">生花。</span></h1><p class="hero-description">把时光折进纸里，把心意剪成花。<br/>在一折一剪之间，遇见中国剪纸的温度，<br/>也留下一点，属于你的新意。</p><div class="hero-actions"><NuxtLink class="btn primary" to="/studio">剪一张自己的窗花 <span>↗</span></NuxtLink><NuxtLink class="quiet-link" to="/learn">先读一个纸上故事 <span>→</span></NuxtLink></div><p class="hero-note"><span>○</span> 无需注册 · 从第一刀开始</p></div>
-  <div class="hero-display"><PaperScraps/><span class="vertical-note">把生活的热爱 · 剪进一纸红</span><div class="hero-orbit orbit-one"/><div class="hero-orbit orbit-two"/><div class="hero-art" :class="{revealed}"><PaperArt :model="starterModels[0]!" label="团花初绽，项目原创数字剪纸"/></div><span class="art-stamp">纸<br/>上<br/>生<br/>花</span><button class="art-label" @click="revealed=!revealed"><span class="tiny-cross">＋</span><span>{{revealed?'一朵花，八次相遇':'团花初绽'}}<small>{{revealed?'点击收起这份心意':'原创示例 · 点击赏花'}}</small></span><span>↗</span></button><span class="display-number">FIG. 01 / 纸的另一种可能</span></div>
-  <div class="hero-bottom"><span>一张纸，一把剪，一份向美而生的心意。</span><a href="#discover">向下，慢慢看 <span>↓</span></a></div>
+  <div class="hero-copy">
+   <div class="eyebrow hero-kicker"><span class="red-dot" aria-hidden="true"/> 非遗剪纸互动展 <span class="edition">VOL. 01</span></div>
+   <h1>一纸之间，<br/>万象<span class="red">生花。</span></h1>
+   <p class="hero-description">一张红纸，折出对称的天地。<br/>一把小剪，留住寻常日子里的好意头。</p>
+   <div class="hero-actions">
+    <NuxtLink class="btn primary" to="/studio">剪一张自己的窗花 <span aria-hidden="true">↗</span></NuxtLink>
+    <NuxtLink class="quiet-link" to="/learn">走进纸上学堂 <span aria-hidden="true">→</span></NuxtLink>
+   </div>
+   <p class="hero-note"><span aria-hidden="true">◇</span> 无需注册，落下你的第一刀。</p>
+  </div>
+
+  <figure class="hero-display" aria-label="团花初绽，窗花展开演示">
+   <PaperScraps/>
+   <div class="exhibit-grid" aria-hidden="true"/>
+   <div class="exhibit-label">
+    <span class="exhibit-index">01 / 纸上展签</span>
+    <strong>团花初绽</strong>
+   </div>
+   <span class="exhibit-mark" aria-hidden="true">紙</span>
+   <div class="hero-orbit" aria-hidden="true"/>
+   <div class="hero-art" :class="{ unfolding, folded: sectors === 1 }">
+    <PaperArt :model="exhibit" :sectors="sectors" label="团花初绽，项目原创数字剪纸"/>
+   </div>
+   <figcaption class="exhibit-controls">
+    <div class="exhibit-stage" aria-live="polite">
+     <span class="stage-caption">{{ sectors === 8 ? '八折成花' : sectors === 1 ? '折叠纸面' : '逐层展开' }}</span>
+     <span class="stage-numbers" aria-hidden="true">
+      <span v-for="stage in stages" :key="stage" :class="{ current: stage === sectors }">{{ stage }}</span>
+     </span>
+    </div>
+    <button class="art-label" type="button" :aria-disabled="unfolding" @click="togglePaper">
+     {{ sectors === 8 ? '折回一角' : '展开窗花' }} <span aria-hidden="true">{{ sectors === 8 ? '↘' : '↗' }}</span>
+    </button>
+   </figcaption>
+  </figure>
+
+  <div class="hero-bottom">
+   <span>2026 零杯网页设计大赛 <span class="hero-divider">/</span> 匠心传成，非遗焕新</span>
+   <a href="#discover">向下，慢慢看 <span aria-hidden="true">↓</span></a>
+  </div>
  </section>
- <section id="discover" class="intro-band"><div class="wrap intro-inner"><span class="intro-mark">剪</span><div><p class="eyebrow">PAPER, PATIENCE & POSSIBILITY</p><h2>剪去的是纸，<br class="mobile-break"/>留下的是生活。</h2></div><p>从窗上的一抹红，到指尖的一次尝试。<br/>我们以数字为纸，邀你读懂留白，<br/>亲手接续一份朴素的美。</p><NuxtLink to="/about" class="round-link" aria-label="了解纸上生花">↗</NuxtLink></div></section>
- <section class="wrap section"><div class="section-heading"><div><p class="eyebrow">01 / 纸上学堂</p><h2>每一剪，都有来处。</h2></div><NuxtLink class="text-link" to="/learn">走近剪纸的世界 ↗</NuxtLink></div><AsyncState :pending="pending" :error="error" @retry="refresh"><div class="story-grid"><NuxtLink v-for="(a,i) in articles?.slice(0,3)" :key="a.id" :to="`/learn/${a.slug}`" class="story-card"><div class="story-illustration" :class="`illustration-${i}`"><PaperArt :model="starterModels[i+1]!" :label="a.title+'的数字示意'"/><span class="illustration-label">{{['纸与生活','虚实之间','折叠之美'][i]}}</span></div><div class="story-meta"><span>{{a.category}}</span><span>0{{i+1}}</span></div><h3>{{a.title}}</h3><p>{{a.summary}}</p><span class="text-link">翻开这一页 →</span></NuxtLink></div></AsyncState></section>
- <section class="workshop-band"><div class="wrap workshop-promo"><div class="promo-paper"><PaperArt :model="starterModels[6]!" label="水滴连珠原创练习"/><span>从一个小小的切口开始</span></div><div><p class="eyebrow">02 / 指尖工坊</p><h2>你也可以，<br/>让一张纸开花。</h2><p>选一个纹样，留一点空白。<br/>圆、三角、水滴，简单的形状也有万千变化。<br/>跟着三段小练习，剪出你的第一张窗花。</p><div class="hero-actions"><NuxtLink class="btn primary" to="/studio">进入剪纸工坊 ↗</NuxtLink><NuxtLink class="text-link" to="/tutorials">看看入门教程 →</NuxtLink></div></div></div></section>
- <section class="wrap section"><div class="section-heading"><div><p class="eyebrow">03 / 纸上展览</p><h2>一人一纸，各自生花。</h2></div><NuxtLink class="text-link" to="/gallery">去展览里走走 ↗</NuxtLink></div><div class="works-grid"><WorkCard v-for="w in gallery?.items?.slice(0,3)" :key="w.id" :work="w"/></div><p v-if="!gallery" class="muted">展览暂时无法读取。<NuxtLink to="/gallery" class="text-link">前往展览重试 →</NuxtLink></p></section>
- <section class="closing-note wrap"><span>一纸，一念，一生花。</span><p>让下一朵窗花，从你手中开始。</p><NuxtLink to="/studio" class="text-link">现在动手 ↗</NuxtLink></section>
+
+ <section id="discover" class="intro-band">
+  <div class="wrap intro-inner">
+   <div class="intro-title"><p class="eyebrow">观 · 学 · 剪 · 展</p><h2>剪去的是纸，<br class="mobile-break"/>留下的是生活。</h2></div>
+   <p class="intro-text">窗上的一抹红，可以是节庆里的祝愿，<br/>也可以是你第一次亲手剪成的花。</p>
+   <NuxtLink to="/about" class="round-link" aria-label="了解纸上生花">↗</NuxtLink>
+  </div>
+ </section>
+
+ <section class="wrap section home-stories">
+  <div class="section-heading">
+   <div><p class="eyebrow">01 / 纸上学堂</p><h2>每一剪，都有来处。</h2></div>
+   <NuxtLink class="text-link home-section-link" to="/learn">走近剪纸的世界 ↗</NuxtLink>
+  </div>
+  <AsyncState :pending="pending" :error="error" @retry="refresh">
+   <div class="story-grid">
+    <NuxtLink v-for="(article, index) in articles?.slice(0,3)" :key="article.id" :to="`/learn/${article.slug}`" class="story-card">
+     <div class="story-illustration" :class="`illustration-${index}`">
+      <span class="story-index" aria-hidden="true">0{{ index + 1 }}</span>
+      <PaperArt :model="starterModels[index+1]!" :label="article.title+'的数字示意'"/>
+     </div>
+     <div class="story-meta"><span>{{ article.category }}</span></div>
+     <h3>{{ article.title }}</h3>
+     <p>{{ article.summary }}</p>
+     <span class="text-link">翻开这一页 →</span>
+    </NuxtLink>
+   </div>
+  </AsyncState>
+ </section>
+
+ <section class="workshop-band">
+  <div class="wrap workshop-promo">
+   <div class="promo-paper">
+    <span class="promo-index">习作 / 水滴连珠</span>
+    <PaperArt :model="starterModels[6]!" label="水滴连珠原创练习"/>
+   </div>
+   <div class="promo-copy">
+    <p class="eyebrow">02 / 指尖工坊</p>
+    <h2>落下第一刀，<br/>让一张纸开花。</h2>
+    <p>在折起的一角放下圆、三角或水滴。<br/>慢慢展开，看你的切口如何长成一朵团花。</p>
+    <div class="hero-actions">
+     <NuxtLink class="btn primary" to="/studio">进入剪纸工坊 ↗</NuxtLink>
+     <NuxtLink class="text-link" to="/tutorials">看看入门教程 →</NuxtLink>
+    </div>
+   </div>
+  </div>
+ </section>
+
+ <section class="wrap section">
+  <div class="section-heading">
+   <div><p class="eyebrow">03 / 纸上展览</p><h2>一人一纸，各自生花。</h2></div>
+   <NuxtLink class="text-link home-section-link" to="/gallery">去展览里走走 ↗</NuxtLink>
+  </div>
+  <div v-if="gallery?.items?.length" class="works-grid">
+   <WorkCard v-for="work in gallery.items.slice(0,3)" :key="work.id" :work="work"/>
+  </div>
+  <p v-else-if="!gallery" class="muted">展览暂时无法读取。<NuxtLink to="/gallery" class="text-link">前往展览重试 →</NuxtLink></p>
+  <p v-else class="muted">展厅正在等待第一件作品。</p>
+ </section>
+ <section class="closing-note wrap">
+  <span aria-hidden="true">✳</span>
+  <h2>下一朵花，从你手中开始。</h2>
+  <NuxtLink to="/studio" class="text-link">打开工作台 ↗</NuxtLink>
+ </section>
 </template>
+
+<style scoped src="../assets/css/home.css"></style>

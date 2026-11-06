@@ -2,3 +2,66 @@
 @media(max-width:800px){.wrap,.site-header,.site-footer{width:92%}.site-header{flex-wrap:wrap;gap:10px;padding:10px 0;min-height:65px}.menu-toggle{display:block;margin-left:auto}.site-header nav{display:none;width:100%;order:4}.site-header nav.open{display:flex}.brand small{display:none}.hero{grid-template-columns:1fr;gap:20px;padding-top:28px}.hero-display{aspect-ratio:1.4}.hero-art{width:63%}.hero-bottom{flex-wrap:wrap}.story-grid,.works-grid,.draft-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:20px}.studio-layout,.article-layout,.work-detail,.admin-content-layout{grid-template-columns:1fr;gap:20px}.article-toc{display:none}.intro-inner,.site-footer,.filter-bar,.studio-heading,.tutorial-guide,.split-heading{flex-wrap:wrap}.review-row{grid-template-columns:20% 1fr}.review-controls{grid-column:1/-1}.canvas-surface{max-height:55vh}.site-footer{align-items:flex-start}.intro-mark{display:none}.editing-board{max-height:48vh}.studio-tools{padding:16px}}
 @media(max-width:540px){.brand{font-size:21px}.brand img{width:28px}.menu-toggle,.personal-link{font-size:13px}.hero h1{font-size:54px}.hero-actions,.section-heading,.canvas-bottom,.workshop-promo,.admin-toolbar,.pagination{flex-wrap:wrap}.hero-bottom>span,.display-number{display:none}.story-grid,.works-grid,.draft-grid{grid-template-columns:1fr}.workshop-promo{display:grid}.promo-paper{width:100%}.promo-paper svg{width:48%}.intro-inner{display:block}.section,.page{padding-block:24px 44px}.section-heading,.page-heading{margin:16px 0 22px}.search-form{flex-wrap:nowrap;width:100%;gap:4px}.search-form input{min-width:0;flex:1}.tutorial-number{font-size:24px}.tutorial-row .paper-art{width:14%}.site-footer{display:grid}.studio-canvas-area{padding:12px}.canvas-watermark{font-size:11px}.hero-art{width:70%}.art-label{font-size:12px}.studio-tools h2{font-size:24px}body{overflow-wrap:anywhere}}
 @media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.001ms!important;transition-duration:.001ms!important;scroll-behavior:auto!important}}
+
+:root {
+  --red: #ad2920;
+  --paper: #fbf3df;
+  --ink: #281b16;
+  --line: #cbb89b;
+  --muted: #655345;
+  --serif: "Songti SC", "STSong", "STZhongsong", "SimSun", serif;
+}
+body {
+  background-image:
+    radial-gradient(ellipse at top left, #fff9ec 0, #fff9ec00 58rem),
+    repeating-linear-gradient(107deg, transparent 0 8px, #91643d0a 8.5px, transparent 9px);
+}
+.header-frame { background: #fbf3dfb3; }
+.site-header { min-height: 75px; }
+.brand { font-size: 25px; letter-spacing: .09em; flex-shrink: 0; }
+.brand img { border-radius: 6px; }
+.brand small { margin-top: 3px; color: var(--muted); letter-spacing: .12em; }
+.site-header nav { gap: clamp(16px, 2.5vw, 42px); }
+.site-header nav a {
+  position: relative;
+  border-bottom: 2px solid transparent;
+  padding-inline: 4px;
+  font-size: 14px;
+}
+.site-header nav a.active { font-weight: 700; }
+.personal-link {
+  padding-inline: 12px;
+  gap: 7px;
+  border: 1px solid var(--line);
+  color: var(--red);
+  font-size: 13px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.personal-link:hover { border-color: var(--red); background: #fffbf4; }
+.menu-toggle { white-space: nowrap; }
+.menu-toggle span { display: inline-block; width: 1em; }
+.btn.primary { font-weight: 700; }
+.footer-frame { background: #2e211d; color: #f8e9d0; }
+.site-footer { border: 0; }
+.site-footer p, .site-footer small { color: #dfc9b0; }
+.site-footer a:hover { color: #ffccad; }
+.footer-links { column-gap: 20px; row-gap: 4px; }
+.footer-links a { display: inline-flex; align-items: center; min-height: 44px; font-size: 14px; }
+.footer-frame :focus-visible { outline-color: #ffccad; }
+
+@media (max-width: 800px) {
+  .site-header { min-height: 64px; }
+  .site-header nav { padding-top: 4px; }
+  .site-header nav a { flex: 1 0 auto; justify-content: center; }
+}
+@media (max-width: 540px) {
+  .site-header { gap: 6px; }
+  .brand { font-size: 21px; gap: 7px; }
+  .brand img { height: auto; }
+  .menu-toggle, .personal-link { padding-inline: 8px; }
+  .site-header nav { gap: 5px; }
+  .site-header nav a { font-size: 13px; }
+  .site-footer { gap: 12px; }
+  .site-footer p { margin: 4px 0; }
+}

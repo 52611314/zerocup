@@ -1,23 +1,65 @@
 <script setup lang="ts">
-const route=useRoute(),menu=ref(false)
-const {notice}=useFeedback()
-watch(()=>route.fullPath,()=>{menu.value=false;notice.value.text=''})
-const links=[['/','首页'],['/learn','纸上学堂'],['/studio','剪纸工坊'],['/gallery','纸上展览']]
+const route = useRoute()
+const menu = ref(false)
+const menuButton = ref<HTMLButtonElement>()
+const { notice } = useFeedback()
+
+watch(() => route.fullPath, () => {
+  menu.value = false
+  notice.value.text = ''
+})
+
+const links = [
+  { href: '/', label: '首页' },
+  { href: '/learn', label: '纸上学堂' },
+  { href: '/studio', label: '剪纸工坊' },
+  { href: '/gallery', label: '纸上展览' }
+]
+
+function dismissMenu() {
+  if (!menu.value) return
+  menu.value = false
+  menuButton.value?.focus()
+}
 </script>
+
 <template>
  <div>
   <NuxtRouteAnnouncer />
   <PaperNavigation/>
   <PaperWeather/>
   <a class="skip" href="#main">跳到主要内容</a>
-  <header class="site-header">
-   <NuxtLink to="/" class="brand" aria-label="纸上生花首页"><img src="/favicon.svg" width="38" height="38" alt=""/><span>纸上生花<small>一纸一世界 · 一剪一传承</small></span></NuxtLink>
-   <button class="menu-toggle" @click="menu=!menu" :aria-expanded="menu" aria-controls="navigation">{{menu?'收起导航 −':'展开导航 ☰'}}</button>
-   <nav id="navigation" :class="{open:menu}" aria-label="主导航"><NuxtLink v-for="[href,label] in links" :key="href" :to="href!" :class="{active:href==='/'?route.path==='/':route.path.startsWith(href!)}">{{label}}</NuxtLink></nav>
-   <NuxtLink to="/me" class="personal-link">我的纸笺 <span aria-hidden="true">↗</span></NuxtLink>
-  </header>
+  <div class="header-frame" @keydown.esc="dismissMenu">
+   <header class="site-header">
+    <NuxtLink to="/" class="brand" aria-label="纸上生花首页">
+     <img src="/favicon.svg" width="38" height="38" alt=""/>
+     <span>纸上生花<small>中国剪纸 · 数字工坊</small></span>
+    </NuxtLink>
+    <button ref="menuButton" class="menu-toggle" type="button" @click="menu = !menu" :aria-expanded="menu" aria-controls="navigation">
+     {{ menu ? '收起导航' : '导航' }} <span aria-hidden="true">{{ menu ? '×' : '☰' }}</span>
+    </button>
+    <nav id="navigation" :class="{ open: menu }" aria-label="主导航">
+     <NuxtLink v-for="{ href, label } in links" :key="href" :to="href" :class="{ active: href === '/' ? route.path === '/' : route.path.startsWith(href) }" @click="menu = false">{{ label }}</NuxtLink>
+    </nav>
+    <NuxtLink to="/me" class="personal-link" @click="menu = false">我的纸笺 <span aria-hidden="true">↗</span></NuxtLink>
+   </header>
+  </div>
   <main id="main"><NuxtPage /></main>
-  <div v-if="notice.text" class="toast" :class="notice.kind" role="status">{{notice.text}}<button @click="notice.text=''" aria-label="关闭提示">×</button></div>
-  <footer class="site-footer"><div><NuxtLink class="footer-brand" to="/">纸上生花<span>让传统，在指尖继续生长。</span></NuxtLink><p>剪纸互动工坊 · 原创数字体验</p></div><div class="footer-links"><NuxtLink to="/tutorials">从这里学起</NuxtLink><NuxtLink to="/about">关于与来源</NuxtLink><NuxtLink to="/admin">展馆管理</NuxtLink><a href="#main">回到顶部 ↑</a></div><small>2026 零杯网页设计大赛<br/>匠心传成，非遗焕新</small></footer>
+  <div v-if="notice.text" class="toast" :class="notice.kind" role="status">{{ notice.text }}<button @click="notice.text = ''" aria-label="关闭提示">×</button></div>
+  <div class="footer-frame">
+   <footer class="site-footer">
+    <div>
+     <NuxtLink class="footer-brand" to="/">纸上生花</NuxtLink>
+     <p>从一张纸开始，读、剪、展。</p>
+    </div>
+    <div class="footer-links">
+     <NuxtLink to="/tutorials">入门教程</NuxtLink>
+     <NuxtLink to="/about">关于与来源</NuxtLink>
+     <NuxtLink to="/admin">展馆管理</NuxtLink>
+     <a href="#main">回到顶部 ↑</a>
+    </div>
+    <small>2026 零杯网页设计大赛<br/>匠心传成，非遗焕新</small>
+   </footer>
+  </div>
  </div>
 </template>
