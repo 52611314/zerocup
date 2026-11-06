@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { PaperModel } from '../../../shared/model'
-import { patternNames, starterModels } from '../../../shared/patterns'
+
 
 interface GalleryPage {
   items: { id: string; model: PaperModel; title: string; category: string; is_example: boolean }[]
@@ -24,8 +24,9 @@ const { data, pending, error, refresh } = await useFetch<GalleryPage>('/api/gall
 })
 
 const categories = ['花叶之间', '几何之美', '自由创作']
-const cover = { ...starterModels[6]!, color: '#952d22' }
-const coverTitle = patternNames[6]!
+const {data:coverPage,refresh:refreshCover}=await useFetch<GalleryPage>('/api/gallery',{key:'gallery-public-cover'})
+const coverWork=computed(()=>coverPage.value?.items[0]||null)
+async function retryGallery(){await Promise.all([refresh(),refreshCover()])}
 const hasFilters = computed(() => Boolean(search.value || category.value))
 const catalogLayout = ref(!hasFilters.value && page.value === 1)
 const resultRevision = ref(0)
@@ -73,12 +74,13 @@ function turn(delta: number) {
         <span class="wall-seal" aria-hidden="true">剪</span>
         <div class="print-stack">
           <div class="catalog-sheet">
-            <PaperArt :model="cover" :label="coverTitle+'数字剪纸'"/>
+            <PaperArt v-if="coverWork" :model="coverWork.model" :label="coverWork.title+'数字剪纸'" :data-gallery-cover="coverWork.id"/>
+            <span v-else class="empty-cover">等待新的纸上作品</span>
           </div>
         </div>
         <figcaption class="wall-caption">
-          <span>{{ coverTitle }}</span>
-          <small>原创示例</small>
+          <span>{{ coverWork?.title||'留白，等待下一朵花' }}</span>
+          <small>{{coverWork?(coverWork.is_example?'原创示例':'访客创作'):'暂未展出'}}</small>
         </figcaption>
       </figure>
     </header>
@@ -112,7 +114,7 @@ function turn(delta: number) {
       />
 
       <div class="collection-results" :aria-busy="pending">
-        <AsyncState :pending="pending && !data" :error="error" :empty="!data?.items.length" @retry="refresh">
+        <AsyncState :pending="pending && !data" :error="error" :empty="!data?.items.length" @retry="retryGallery">
           <div
             :key="resultRevision"
             class="works-grid exhibit-grid"
@@ -133,7 +135,7 @@ function turn(delta: number) {
         <span>第 {{ data.page }} / {{ Math.max(1, data.pages) }} 页</span>
         <button class="btn" :disabled="pending || data.page >= data.pages" @click="turn(1)">下一页 →</button>
       </nav>
-      <p class="gallery-note">标注“原创示例”的作品由项目制作，用于说明数字创作方式。访客作品审核后在此展出。</p>
+      <p class="gallery-note">标注“原创示例”的作品由项目制作，用于说明数字创作方式。展示期间访客投稿即时通过并在此展出。</p>
     </section>
   </div>
 </template>

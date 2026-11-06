@@ -43,7 +43,7 @@ export async function workRoutes(event:H3Event,path:string):Promise<any> {
  if(path.startsWith('works/')) {
   const id=uuid(path.split('/')[1])
   if(path.endsWith('/submit')&&event.method==='POST') {
-   const [w]=await query("UPDATE works SET status='pending',review_note='',version=version+1,updated_at=now() WHERE id=$1 AND owner_id=$2 AND status IN ('draft','rejected') RETURNING id,status,version",[id,owner])
+   const [w]=await query("UPDATE works SET status='published',review_note='展示期间自动通过',version=version+1,updated_at=now(),published_at=now() WHERE id=$1 AND owner_id=$2 AND status IN ('draft','rejected','pending') RETURNING id,status,version",[id,owner])
    if(!w)throw createError({statusCode:409,message:'作品不存在或当前状态无法投稿。'});return w
   }
   if(event.method==='PATCH') {

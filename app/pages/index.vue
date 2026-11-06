@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
   </div>
  </section>
 
- <div id="discover" tabindex="-1"><PaperWindows/></div>
+ <div id="discover" tabindex="-1"><PaperWindows :featured-work="gallery?.items?.[0]"/></div>
  <PaperScenes/>
 
  <section id="fold-and-light" class="workshop-band">

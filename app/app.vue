@@ -31,6 +31,7 @@ function dismissMenu() {
  <div id="site-top" tabindex="-1">
   <NuxtRouteAnnouncer />
   <PaperNavigation/>
+  <WindowFlight/>
   <PaperWeather/>
   <a class="skip" href="#main">跳到主要内容</a>
   <div class="header-frame" @keydown.esc="dismissMenu">

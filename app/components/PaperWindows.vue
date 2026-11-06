@@ -2,6 +2,10 @@
 import { isNavigationFailure } from 'vue-router'
 import { starterModels } from '../../shared/patterns'
 
+import type {WindowWork} from '../composables/useWindowFlight'
+const props=defineProps<{featuredWork?:WindowWork}>()
+const flight=useWindowFlight()
+const router=useRouter()
 const windows = [
   { key: 'learn', to: '/learn', number: '01', title: '纸上学堂', description: '从一纸窗花，读懂剪纸里的生活。', model: starterModels[1]! },
   { key: 'studio', to: '/studio', number: '02', title: '剪纸工坊', description: '沿一条折痕，剪出自己的纹样。', model: starterModels[6]! },
@@ -44,6 +48,13 @@ function openWindow(event: MouseEvent, entry: WindowEntry) {
   }
 
   const link = event.currentTarget as HTMLAnchorElement
+  if(entry.key==='gallery'&&props.featuredWork){
+    const art=link.querySelector('.window-scene .paper-art')!.getBoundingClientRect()
+    flight.value={work:props.featuredWork,rect:{left:art.left,top:art.top,width:art.width,height:art.height}}
+    paperWindowTarget.value='/gallery'
+    void goTo(entry).then(()=>{if(router.currentRoute.value.path!=='/gallery')flight.value=null})
+    return
+  }
   const aperture = link.querySelector('.window-cut')!.getBoundingClientRect()
   passage.value = { entry, x: aperture.left + aperture.width / 2, y: aperture.top + aperture.height / 2 }
   timer = setTimeout(() => {
@@ -88,7 +99,8 @@ onBeforeUnmount(cancelPassage)
                   </template>
                   <template v-else>
                     <span class="window-mount"/>
-                    <PaperArt :model="entry.model" />
+                    <PaperArt v-if="featuredWork" :model="featuredWork.model" :data-window-work="featuredWork.id" />
+                    <span v-else class="window-empty">等待下一朵花</span>
                   </template>
                 </span>
               </span>

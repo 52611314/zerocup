@@ -84,7 +84,7 @@ const sources = [
             <li>从<NuxtLink class="about-inline-link" to="/learn">学堂</NuxtLink>或<NuxtLink class="about-inline-link" to="/tutorials">教程</NuxtLink>进入工坊，在纸面上放下一个切口。</li>
             <li>用位置、大小和角度控件调整，点「展开作品」看完整窗花。</li>
             <li>给作品命名并保存。看到「已保存到服务器」后，可在我的纸笺里继续编辑，或下载 SVG、PNG 图像。</li>
-            <li>投稿审核通过后，作品会进入公开展览。驳回意见可在我的纸笺查看。</li>
+            <li>当前展示期间，投稿会自动通过并立即进入公开展览。私人草稿在投稿前保持私密。</li>
           </ol>
         </div>
       </section>

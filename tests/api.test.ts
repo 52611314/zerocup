@@ -11,7 +11,7 @@ function visitor(){
   return {status:r.status,data:await r.json()}
  }
 }
-test('真实数据库草稿、访客隔离、冲突检测、审核和公开详情',async()=>{
+test('真实数据库草稿、访客隔离、冲突检测、投稿自动通过和公开详情',async()=>{
  const owner=visitor(),other=visitor(),curator=visitor()
  const record={title:'流程验证',model:starterModels[0]}
  const made=await owner('works','POST',record)
@@ -22,9 +22,10 @@ test('真实数据库草稿、访客隔离、冲突检测、审核和公开详�
   assert.equal((await other('me/works/'+id)).status,404)
   assert.equal((await other('admin/works')).status,401)
   assert.equal((await owner('works/'+id,'PATCH',{...record,version:0})).status,409)
-  const pending=await owner('works/'+id+'/submit','POST')
-  assert.equal(pending.data.status,'pending')
   assert.equal((await other('gallery/'+id)).status,404)
+  const pending=await owner('works/'+id+'/submit','POST')
+  assert.equal(pending.data.status,'published')
+  assert.equal((await other('gallery/'+id)).status,200)
   assert.equal((await curator('admin/login','POST',{username:process.env.ADMIN_USERNAME,password:process.env.ADMIN_PASSWORD})).status,200)
   assert.equal((await curator('admin/works/'+id,'PATCH',{version:pending.data.version,status:'published',featured_order:100})).status,200)
   assert.equal((await other('gallery/'+id)).data.title,record.title)

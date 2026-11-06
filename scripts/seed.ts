@@ -36,7 +36,7 @@ const articles=[
 const tutorials=[
  {slug:'first-flower',title:'第一朵窗花',summary:'认识圆孔与留白，完成你的第一次展开。',steps:[{title:'留一个圆孔',text:'选择圆形，在纸面点击一下。也可以点“添加到纸面”。',require:'circle'},{title:'看见对称',text:'点击“展开作品”，看看一个切口怎样在纸上相遇。',require:'unfold'},{title:'留住这朵花',text:'给作品起个名字，再点“保存草稿”，把它放进我的纸笺。',require:'save'}]},
  {slug:'petal-rhythm',title:'花瓣的节奏',summary:'用水滴与圆形，练习大小与方向。',steps:[{title:'添一片花瓣',text:'选择水滴并添加。下方位置与角度按钮可以微调，无需拖动。',require:'drop'},{title:'给花瓣留点光',text:'添加一个圆形，调整大小，让疏密更舒展。',require:'circle'},{title:'展开花的节奏',text:'点击“展开作品”，观察你刚才放下的每一个切口。',require:'unfold'},{title:'保存练习',text:'保存草稿。刷新后可以从我的纸笺接着创作。',require:'save'}]},
- {slug:'angular-window',title:'有棱角的风景',summary:'组合三种切口，完成一张自己的对称作品。',steps:[{title:'剪出方向',text:'添加三角形，调整角度，观察切口的朝向。',require:'triangle'},{title:'柔和的对照',text:'添加水滴，让尖角旁有一条柔和的线。',require:'drop'},{title:'留下一点空白',text:'添加圆形，尝试改变位置与大小。',require:'circle'},{title:'看完整图案',text:'展开你的作品。需要修改时可返回折叠视图。',require:'unfold'},{title:'保存你的设计',text:'保存后可投稿。投稿将先进入审核，审核通过后进入作品展。',require:'save'}]}
+ {slug:'angular-window',title:'有棱角的风景',summary:'组合三种切口，完成一张自己的对称作品。',steps:[{title:'剪出方向',text:'添加三角形，调整角度，观察切口的朝向。',require:'triangle'},{title:'柔和的对照',text:'添加水滴，让尖角旁有一条柔和的线。',require:'drop'},{title:'留下一点空白',text:'添加圆形，尝试改变位置与大小。',require:'circle'},{title:'看完整图案',text:'展开你的作品。需要修改时可返回折叠视图。',require:'unfold'},{title:'保存你的设计',text:'保存后可投稿。展示期间投稿会自动通过，立即进入作品展。',require:'save'}]}
 ]
 await client.connect()
 try {
