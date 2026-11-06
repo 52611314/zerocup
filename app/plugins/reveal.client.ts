@@ -1,7 +1,7 @@
 // Reveal real line boxes without splitting text nodes or changing Vue's DOM.
 export default defineNuxtPlugin(app => {
   const selector = 'h1,h2,h3,p,li,dt,dd,small,label,legend,a,button,img,.paper-art,.story-illustration,.work-mount,.detail-mount,.eyebrow,.art-stamp,.vertical-note,.display-number'
-  const exclude = '.hero-display,.hero-actions,[role="alert"],[role="status"],.sr-only'
+  const exclude = '.opening,.paper-windows,.paper-scenes,.hero-display,.hero-actions,[role="alert"],[role="status"],.sr-only'
   const preference = matchMedia('(prefers-reduced-motion: reduce)')
   const known = new WeakSet<Element>()
   const timers = new Map<Element,ReturnType<typeof setTimeout>>()
@@ -53,8 +53,7 @@ export default defineNuxtPlugin(app => {
       const parent=el.parentElement!
       const index=group.get(parent)||0
       group.set(parent,index+1)
-      const gap=parent.matches('.hero-copy')?500:100
-      timers.set(el,setTimeout(()=>reveal(el),Math.min(index,5)*gap))
+      timers.set(el,setTimeout(()=>reveal(el),Math.min(index,5)*100))
     }
   })
   function scan(root:Element){
@@ -67,7 +66,6 @@ export default defineNuxtPlugin(app => {
   }
   app.hook('app:mounted',()=>{
     scan(document.body)
-    document.documentElement.classList.remove('paper-boot')
     new MutationObserver(changes=>{
       for(const change of changes)for(const node of change.addedNodes)if(node instanceof Element)scan(node)
     }).observe(document.body,{childList:true,subtree:true})

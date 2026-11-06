@@ -49,5 +49,4 @@
 .wind-petal.shape-2 { clip-path:polygon(50% 0,100% 50%,50% 100%,0 50%); }
 .wind-petal.shape-3 { border-radius:65% 10%; clip-path:polygon(0 0,100% 0,100% 38%,50% 35%,70% 64%,100% 57%,100% 100%,0 100%); }
 [data-paper-wait] { opacity:0; }
-.paper-boot .hero-copy > :not(.hero-actions) { opacity:0; }
 @media(prefers-reduced-motion:reduce){[data-paper-wait]{opacity:1}.paper-weather{display:none}}

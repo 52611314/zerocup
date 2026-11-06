@@ -7,7 +7,6 @@ export default defineNuxtConfig({
   app: {
     head: {
       htmlAttrs: { lang: 'zh-CN' },
-      script: [{ innerHTML: "if(!matchMedia('(prefers-reduced-motion: reduce)').matches){document.documentElement.classList.add('paper-boot');setTimeout(()=>document.documentElement.classList.remove('paper-boot'),1500)}" }],
       title: '纸上生花 · 剪纸互动工坊',
       meta: [{ name: 'theme-color', content: '#AD2920' }],
       link: [{ rel: 'icon', type: 'image/svg+xml', href: '/favicon.svg' }]
