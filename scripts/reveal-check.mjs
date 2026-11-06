@@ -23,11 +23,13 @@ try {
   await offscreen.scrollIntoViewIfNeeded()
   await page.waitForFunction(()=>!document.querySelector('#discover h2').hasAttribute('data-paper-wait'))
   const lifetimes=await page.locator('.paper-weather').evaluate(el=>el.getAnimations({subtree:true}).map(a=>a.effect.getTiming().duration))
-  assert.ok(lifetimes.length>=2 && lifetimes.every(ms=>ms>=3000&&ms<=5000))
+  assert.ok(lifetimes.length>=1 && lifetimes.length<=3 && lifetimes.every(ms=>ms>=3000&&ms<=5000))
   await page.goto('/gallery')
   await page.locator('.wind-petal').first().waitFor({state:'attached'})
   await page.emulateMedia({reducedMotion:'reduce'})
-  await page.waitForFunction(()=>!document.querySelector('.wind-petal,[data-paper-wait]'))
+  await page.locator('.works-grid .work-card').last().scrollIntoViewIfNeeded()
+  await page.waitForFunction(()=>!document.querySelector('.wind-petal') &&
+   [...document.querySelectorAll('[data-paper-wait]')].every(el=>getComputedStyle(el).opacity==='1'))
   console.log(width+'px pass, title→body '+Math.round(body.time-title.time)+' ms, '+lifetimes.length+' live petals')
   await page.close()
  }

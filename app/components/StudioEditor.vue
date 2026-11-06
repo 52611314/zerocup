@@ -7,6 +7,14 @@ const id=ref<string|null>(null),version=ref(1),status=ref('draft'),savedSnapshot
 const showTemplates=ref(false),showHelp=ref(false),unfolded=ref(false),unfolding=ref(false),sectors=ref(1),hasUnfolded=ref(false)
 const chosen=computed(()=>model.value.cuts.find(c=>c.id===selected.value))
 const editable=computed(()=>['draft','rejected'].includes(status.value))
+const firstCutPosition={x:56,y:22}
+const pickedTemplate=ref(false)
+const guideStep=computed(()=>{
+ if(!editable.value||id.value||route.query.draft||route.query.pattern||route.query.remix||route.query.tutorial||pickedTemplate.value||unfolding.value)return
+ if(!model.value.cuts.length)return unfolded.value?undefined:'cut'
+ return hasUnfolded.value?'save':'unfold'
+})
+const workshopStep=computed(()=>guideStep.value||(unfolded.value?'unfold':editable.value?'cut':undefined))
 const cutNames:Record<CutType,string>={circle:'圆形',triangle:'三角形',drop:'水滴'}
 const colorNames=['朱砂红','深绛红','赭红','墨黑']
 const snapshot=()=>JSON.stringify({model:model.value,title:title.value,description:description.value})
@@ -26,7 +34,7 @@ function commit(next:PaperModel){history.commit(next);model.value=cloneModel(his
 function undo(){model.value=history.undo();revision.value++;selected.value=null;hasUnfolded.value=false}
 function redo(){model.value=history.redo();revision.value++;selected.value=null;hasUnfolded.value=false}
 const fallingCut = ref<Cut|null>(null)
-function add(position={x:56,y:22}) {
+function add(position=firstCutPosition) {
  if(!editable.value)return
  if(model.value.cuts.length>=80){feedback('这张纸最多放置 80 个切口。','error');return}
  const c:Cut={id:crypto.randomUUID(),type:tool.value,...clampPosition(position.x,position.y),size:8,aspect:tool.value==='drop'?.55:1,angle:23}
@@ -36,7 +44,7 @@ function patch(field:'size'|'aspect'|'angle',value:number){if(!chosen.value)retu
 function move(dx:number,dy:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;Object.assign(c,clampPosition(c.x+dx,c.y+dy));commit(next)}
 function remove(){const next=cloneModel(model.value);next.cuts=next.cuts.filter(c=>c.id!==selected.value);commit(next);selected.value=null}
 function color(value:string){const next=cloneModel(model.value);next.color=value;commit(next)}
-function template(p:any){if(!editable.value)return;commit(p.model);selected.value=null;showTemplates.value=false;feedback(`已铺开「${p.name}」的起始纹样。`)}
+function template(p:any){if(!editable.value)return;commit(p.model);pickedTemplate.value=true;selected.value=null;showTemplates.value=false;feedback(`已铺开「${p.name}」的起始纹样。`)}
 const board=ref<SVGSVGElement>(),drag=ref<{id:string;original:PaperModel;moved:boolean;pointer:number}|null>(null)
 function eventPosition(e:PointerEvent){const svg=board.value!;const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM()!.inverse());return clampPosition(point.x,point.y)}
 function pointerDown(e:PointerEvent,cutId?:string) {
@@ -105,9 +113,9 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
   <div v-if="!editable" class="status-banner" role="status">{{status==='pending'?'这张纸已送审，审核期间暂时收好。':'这张纸已在展览中。'}}<button class="text-link" :disabled="saving" @click="save(true)">另存新草稿继续创作 ↗</button></div>
   <div class="studio-workspace" data-studio-controls>
    <nav class="studio-steps" aria-label="工坊流程">
-    <a href="#cut-tools" :aria-current="editable&&!unfolded?'step':undefined"><span>01</span> 选形落刀 <i>↘</i></a>
-    <a href="#unfold-tools" :aria-current="unfolded?'step':undefined"><span>02</span> 展开成花 <i>↘</i></a>
-    <a href="#save-tools"><span>03</span> 留存作品 <i>↘</i></a>
+    <a href="#cut-tools" :aria-current="workshopStep==='cut'?'step':undefined"><span>01</span> 选形落刀 <i>↘</i></a>
+    <a href="#unfold-tools" :aria-current="workshopStep==='unfold'?'step':undefined"><span>02</span> 展开成花 <i>↘</i></a>
+    <a href="#save-tools" :aria-current="workshopStep==='save'?'step':undefined"><span>03</span> 留存作品 <i>↘</i></a>
    </nav>
    <div class="studio-layout">
     <section class="studio-canvas-area" aria-label="创作纸面">
@@ -135,6 +143,10 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
        <path class="sector-paper" :d="SECTOR_PATH" :fill="model.color" mask="url(#edit-mask)"/>
        <path data-paper :d="SECTOR_PATH" fill="transparent" stroke="#b28a48" stroke-width=".3"/>
        <path d="M -3 0 L 104 0 M 0 0 L 74 74" stroke="#b28a48" stroke-width=".35" stroke-dasharray="1 1.4" fill="none" pointer-events="none"/>
+       <g v-if="guideStep==='cut'" class="first-cut-mark" :transform="`translate(${firstCutPosition.x} ${firstCutPosition.y})`" aria-hidden="true">
+        <circle r="7" vector-effect="non-scaling-stroke"/>
+        <path d="M -2.5 0 H 2.5 M 0 -2.5 V 2.5" vector-effect="non-scaling-stroke"/>
+       </g>
        <g clip-path="url(#edit-sector)">
         <path v-for="c in model.cuts" :key="c.id" :d="cutPath(c)" :transform="`translate(${c.x} ${c.y}) rotate(${c.angle})`" fill="transparent"
          :stroke="selected===c.id?'#24201D':'#B28A48'" :stroke-width="selected===c.id?'.8':'.35'" class="cut-handle" @pointerdown.stop="pointerDown($event,c.id)"/>
@@ -148,14 +160,22 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       </svg>
       <div class="canvas-watermark" aria-hidden="true">纸上生花<span>留白 · 对称 · 展开</span></div>
      </div>
-     <div id="unfold-tools" class="canvas-bottom">
-      <p v-if="unfolded">同一个切口，在八个方向照面。</p>
-      <p v-else-if="editable">当前切口 <strong>{{cutNames[tool]}}</strong>。点按红纸放置。</p>
-      <p v-else>展开查看完整图案。</p>
+     <div id="unfold-tools" class="canvas-bottom" :class="{'guide-save-ready':guideStep==='save'}">
+      <p aria-live="polite">
+       <template v-if="guideStep==='cut'"><strong>落下第一刀</strong><span class="guide-detail">点红纸上的标记，剪一个{{cutNames[tool]}}。</span></template>
+       <template v-else-if="guideStep==='unfold'"><strong>展开看看</strong><span class="guide-detail">一个切口，会在八个方向成花。</span></template>
+       <template v-else-if="guideStep==='save'"><strong>给这朵花起个名字</strong></template>
+       <template v-else-if="unfolded">同一个切口，在八个方向照面。</template>
+       <template v-else-if="editable">当前切口 <strong>{{cutNames[tool]}}</strong>。点按红纸放置。</template>
+       <template v-else>展开查看完整图案。</template>
+      </p>
       <div class="canvas-actions">
        <button v-if="unfolding" class="btn" @click="skip">跳过动效</button>
-       <button v-if="unfolded" class="btn" @click="fold">← 回到折叠纸面</button>
-       <button v-else class="btn primary" @click="unfold">展开作品 <span aria-hidden="true">✳</span></button>
+       <button class="btn" :class="{primary:!unfolded&&guideStep!=='cut'}" @click="unfolded?fold():unfold()">
+        <template v-if="unfolded">← 回到折叠纸面</template>
+        <template v-else>展开作品 <span aria-hidden="true">✳</span></template>
+       </button>
+       <a v-if="guideStep==='save'" class="btn primary" href="#work-title">前往保存 <span aria-hidden="true">↘</span></a>
       </div>
      </div>
      <div class="export-row">

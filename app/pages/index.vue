@@ -8,31 +8,68 @@ const { data: gallery } = await useFetch<any>('/api/gallery')
 const exhibit = starterModels[0]!
 const sectors = ref(8)
 const unfolding = ref(false)
+const foldTarget = ref(0)
+const playing = ref(false)
+const reducedMotion = ref(false)
+const announcement = ref('')
 const stages = [1, 2, 4, 8]
-const foldInterval = 240
+const foldInterval = 190
+const unfoldInterval = 240
+let preference: MediaQueryList | undefined
 let timers: ReturnType<typeof setTimeout>[] = []
 
-function togglePaper() {
-  if (unfolding.value) return
-  if (sectors.value === 8) {
-    sectors.value = 1
-    return
-  }
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) {
-    sectors.value = 8
-    return
-  }
-  unfolding.value = true
-  timers = stages.slice(1).map((stage, index) => setTimeout(() => {
-    sectors.value = stage
-  }, index * foldInterval))
-  timers.push(setTimeout(() => {
-    unfolding.value = false
-    timers = []
-  }, (stages.length - 1) * foldInterval))
+function finishDemo() {
+  timers.forEach(timer => clearTimeout(timer))
+  timers = []
+  sectors.value = 8
+  foldTarget.value = 0
+  unfolding.value = false
+  playing.value = false
 }
 
-onBeforeUnmount(() => timers.forEach(timer => clearTimeout(timer)))
+function syncMotion() {
+  reducedMotion.value = preference?.matches ?? false
+  if (playing.value) announcement.value = '已显示完整窗花'
+  finishDemo()
+}
+
+function demonstrate() {
+  if (playing.value) return
+  if (reducedMotion.value) {
+    sectors.value = sectors.value === 8 ? 1 : 8
+    announcement.value = sectors.value === 8 ? '已显示完整窗花' : '已显示折叠纸角'
+    return
+  }
+
+  playing.value = true
+  announcement.value = '正在演示窗花折展'
+  const foldingStages = stages.slice(0, -1).reverse()
+  foldTarget.value = foldingStages[0]!
+  timers = foldingStages.map((stage, index) => setTimeout(() => {
+    sectors.value = stage
+    foldTarget.value = foldingStages[index + 1] ?? 0
+  }, (index + 1) * foldInterval))
+
+  const unfoldAt = foldingStages.length * foldInterval + 300
+  timers.push(...stages.slice(1).map((stage, index) => setTimeout(() => {
+    unfolding.value = true
+    sectors.value = stage
+  }, unfoldAt + index * unfoldInterval)))
+  timers.push(setTimeout(() => {
+    finishDemo()
+    announcement.value = '折展完成，已显示完整窗花'
+  }, unfoldAt + (stages.length - 1) * unfoldInterval))
+}
+
+onMounted(() => {
+  preference = matchMedia('(prefers-reduced-motion: reduce)')
+  syncMotion()
+  preference.addEventListener('change', syncMotion)
+})
+onBeforeUnmount(() => {
+  finishDemo()
+  preference?.removeEventListener('change', syncMotion)
+})
 </script>
 
 <template>
@@ -50,25 +87,26 @@ onBeforeUnmount(() => timers.forEach(timer => clearTimeout(timer)))
 
   <figure class="hero-display" aria-label="团花初绽，窗花展开演示">
    <PaperScraps/>
-   <div class="exhibit-grid" aria-hidden="true"/>
    <div class="exhibit-label">
     <span class="exhibit-index">01 / 纸上展签</span>
     <strong>团花初绽</strong>
    </div>
    <span class="exhibit-mark" aria-hidden="true">紙</span>
    <div class="hero-orbit" aria-hidden="true"/>
-   <div class="hero-art" :class="{ unfolding, folded: sectors === 1 }">
+   <div class="hero-art" :class="{ unfolding, folded: sectors === 1 }" :data-fold-to="foldTarget || undefined">
     <PaperArt :model="exhibit" :sectors="sectors" label="团花初绽，项目原创数字剪纸"/>
    </div>
    <figcaption class="exhibit-controls">
-    <div class="exhibit-stage" aria-live="polite">
-     <span class="stage-caption">{{ sectors === 8 ? '八折成花' : sectors === 1 ? '折叠纸面' : '逐层展开' }}</span>
+    <div class="exhibit-stage">
+     <span class="stage-caption">{{ foldTarget ? '沿折痕收拢' : sectors === 8 ? '八折成花' : sectors === 1 ? '折叠纸角' : '逐层展开' }}</span>
      <span class="stage-numbers" aria-hidden="true">
       <span v-for="stage in stages" :key="stage" :class="{ current: stage === sectors }">{{ stage }}</span>
      </span>
     </div>
-    <button class="art-label" type="button" :aria-disabled="unfolding" @click="togglePaper">
-     {{ sectors === 8 ? '折回一角' : '展开窗花' }} <span aria-hidden="true">{{ sectors === 8 ? '↘' : '↗' }}</span>
+    <span class="sr-only" role="status">{{ announcement }}</span>
+    <button class="art-label" type="button" :aria-disabled="playing" @click="demonstrate">
+     {{ reducedMotion ? sectors === 8 ? '查看纸角' : '查看完整窗花' : '演示折展' }}
+     <span aria-hidden="true">{{ reducedMotion ? '↗' : '▷' }}</span>
     </button>
    </figcaption>
   </figure>

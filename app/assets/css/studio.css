@@ -136,6 +136,8 @@
 }
 
 .editing-board [data-paper] { cursor: crosshair; }
+.first-cut-mark { fill: none; stroke: #fff3db; stroke-width: 1.3; pointer-events: none; }
+.first-cut-mark circle { stroke-dasharray: 3 2; }
 .cut-handle { cursor: grab; }
 .cut-handle:active { cursor: grabbing; }
 .sector-paper, .unfold-stage .paper-art { filter: drop-shadow(1px 4px 3px #42201f42); }
@@ -145,6 +147,7 @@
 .canvas-bottom { padding: 13px 0; gap: 10px; }
 .canvas-bottom p { margin: 0; color: var(--muted); }
 .canvas-bottom p strong { color: var(--red); }
+.guide-detail { display: block; }
 .canvas-actions { display: flex; gap: 6px; flex-shrink: 0; flex-wrap: wrap; }
 .canvas-actions .btn { font-size: .89rem; gap: .6em; }
 .export-row { border-top: 1px solid var(--line); padding: 11px 0 0; gap: 8px; }
@@ -208,7 +211,7 @@
 .save-panel .full { margin: 5px 0; }
 .save-panel .fine-print { margin-bottom: 0; letter-spacing: normal; }
 
-#cut-tools, #unfold-tools, #save-tools { scroll-margin-top: 95px; }
+#cut-tools, #unfold-tools, #save-tools, #work-title { scroll-margin-top: 95px; }
 
 @media (min-width: 901px) and (min-height: 800px) {
   .studio-canvas-area { position: sticky; top: 88px; }
@@ -232,4 +235,9 @@
   .canvas-actions { flex-shrink: 1; justify-content: flex-end; }
   .canvas-actions .btn, .export-row button { padding-inline: 9px; }
   .export-row { font-size: .75rem; }
+}
+
+@media (max-width: 380px) {
+  .guide-save-ready { flex-wrap: wrap; }
+  .guide-save-ready p { flex-basis: 100%; }
 }

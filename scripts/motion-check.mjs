@@ -8,13 +8,24 @@ try {
   await page.waitForLoadState('networkidle')
   await page.locator('.hero-art').tap()
   await page.locator('.paper-scrap').first().waitFor()
-  await page.getByRole('button',{name:'折回一角'}).press('Enter')
-  assert.equal(await page.locator('.hero-art use').count(),1)
-  await page.getByRole('button',{name:'展开窗花'}).press('Enter')
-  await page.waitForFunction(()=>document.querySelector('.hero-art')?.querySelectorAll('use').length===8)
-  await page.getByRole('button',{name:'折回一角'}).click()
+  await page.evaluate(()=>{
+    const art=document.querySelector('.hero-art')
+    window.paperStages=[8]
+    new MutationObserver(()=>{
+      const count=art.querySelectorAll('use').length
+      if(window.paperStages.at(-1)!==count)window.paperStages.push(count)
+    }).observe(art,{subtree:true,childList:true})
+  })
+  const demo=page.getByRole('button',{name:'演示折展'})
+  await demo.press('Enter')
+  await page.waitForFunction(()=>document.querySelector('.art-label')?.getAttribute('aria-disabled')==='false')
+  assert.deepEqual(await page.evaluate(()=>window.paperStages),[8,4,2,1,2,4,8])
+  await demo.click()
+  await page.waitForFunction(()=>document.querySelector('.hero-art')?.querySelectorAll('use').length===1)
   await page.emulateMedia({reducedMotion:'reduce'})
-  await page.getByRole('button',{name:'展开窗花'}).press('Enter')
+  await page.getByRole('button',{name:'查看纸角'}).press('Enter')
+  assert.equal(await page.locator('.hero-art use').count(),1)
+  await page.getByRole('button',{name:'查看完整窗花'}).press('Enter')
   assert.equal(await page.locator('.hero-art use').count(),8)
   await page.emulateMedia({reducedMotion:'no-preference'})
   await page.route('**/api/articles/a-window-of-paper',async route=>{
@@ -47,5 +58,5 @@ try {
   assert.equal(await page.locator('.cut-off').count(),0)
   await page.getByRole('button',{name:'展开作品'}).click()
   assert.equal(await page.locator('.unfold-stage use').count(),8)
-  console.log('PASS: touch scraps, keyboard exhibit folding, delayed navigation cuts, loader exit, matching cut fragment, eight sectors, reduced motion')
+  console.log('PASS: touch scraps, complete one-click fold demonstration, delayed navigation cuts, loader exit, matching cut fragment, eight sectors, reduced motion')
 } finally { await browser.close() }

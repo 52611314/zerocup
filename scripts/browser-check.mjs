@@ -17,9 +17,13 @@ try{
   console.log(width+'px: home, gallery, studio fit')
  }
  await page.setViewportSize({width:390,height:844})
+ await page.locator('.first-cut-mark').waitFor()
  await page.getByRole('button',{name:'添加到纸面'}).click()
+ await page.locator('.first-cut-mark').waitFor({state:'detached'})
  await page.getByRole('button',{name:'切口右移'}).click()
  await page.getByRole('button',{name:'展开作品'}).click()
+ await page.getByRole('link',{name:'前往保存'}).click()
+ assert.equal(await page.evaluate(()=>document.activeElement?.id),'work-title')
  await page.locator('#work-title').fill('浏览器验证用纸')
  await page.route('**/api/works',r=>r.fulfill({status:503,contentType:'application/json',body:'{"message":"模拟连接中断"}'}))
  await page.getByRole('button',{name:'保存草稿'}).click()

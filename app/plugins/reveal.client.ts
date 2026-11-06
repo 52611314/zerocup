@@ -1,7 +1,7 @@
 // Reveal real line boxes without splitting text nodes or changing Vue's DOM.
 export default defineNuxtPlugin(app => {
-  const selector = 'h1,h2,h3,p,li,dt,dd,small,label,legend,a,button,img,.paper-art,.story-illustration,.work-mount,.detail-mount,.hero-art,.eyebrow,.art-stamp,.vertical-note,.display-number'
-  const exclude = '.site-header,[data-studio-controls],.exhibit-controls,.editing-board,.unfold-stage,.cut-adjust,.toast,.paper-navigation,[role="alert"],[role="status"],.paper-weather,.paper-scraps,.skip,.sr-only'
+  const selector = 'h1,h2,h3,p,li,dt,dd,small,label,legend,a,button,img,.paper-art,.story-illustration,.work-mount,.detail-mount,.eyebrow,.art-stamp,.vertical-note,.display-number'
+  const exclude = '.site-header,[data-studio-controls],.hero-display,.editing-board,.unfold-stage,.cut-adjust,.toast,.paper-navigation,[role="alert"],[role="status"],.paper-weather,.paper-scraps,.skip,.sr-only'
   const preference = matchMedia('(prefers-reduced-motion: reduce)')
   const known = new WeakSet<Element>()
   const timers = new Map<Element,ReturnType<typeof setTimeout>>()
