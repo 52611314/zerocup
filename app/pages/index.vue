@@ -90,7 +90,7 @@ onBeforeUnmount(() => {
    </div>
    <figure id="swallow-plate" class="opening-plate" :class="{ 'plate-negative': reversed }">
     <span class="opening-index" aria-hidden="true">01 / 双读剪纸</span>
-    <div class="opening-art"><SwallowCut :reversed="reversed"/></div>
+    <div class="opening-art"><SwallowReveal :reversed="reversed"/></div>
     <figcaption class="opening-caption">
      <span>《花里有燕》</span>
      <span role="status">{{ reversed ? '留白读法 · 双燕' : '纸面读法 · 团花' }}</span>

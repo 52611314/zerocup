@@ -18,6 +18,8 @@ interface LessonProgress {
   slug: string
   step: number
   total: number
+  work_id?: string
+  run_step?: number | null
 }
 
 interface Favorite {
@@ -143,15 +145,15 @@ const labels: Record<Draft['status'], string> = {
             <div v-else-if="tab === 'progress'" class="progress-list">
               <article v-for="lesson in progress" :key="lesson.tutorial_id">
                 <div>
-                  <p class="eyebrow">{{ lesson.step >= lesson.total ? '已经完成' : '正在练习' }}</p>
-                  <h3>{{ lesson.title }}</h3>
+                  <p class="eyebrow">{{ (lesson.run_step ?? lesson.step) >= lesson.total ? '已经完成' : '正在练习' }}</p>
+                  <h3>{{ lesson.title }}</h3><small v-if="lesson.step>=lesson.total && (lesson.run_step??lesson.step)<lesson.total">曾完成此教程 · 现在正在重新练习</small>
                   <div class="notebook-progress">
-                    <progress :value="lesson.step" :max="lesson.total" :aria-label="lesson.title + '完成进度'" />
-                    <span aria-hidden="true">{{ lesson.step }} / {{ lesson.total }}</span>
+                    <progress :value="lesson.run_step ?? lesson.step" :max="lesson.total" :aria-label="lesson.title + '完成进度'" />
+                    <span aria-hidden="true">{{ lesson.run_step ?? lesson.step }} / {{ lesson.total }}</span>
                   </div>
                 </div>
-                <NuxtLink class="text-link" :to="`/studio?tutorial=${lesson.slug}`">
-                  {{ lesson.step >= lesson.total ? '再练一次' : '继续这段练习' }} <span aria-hidden="true">↗</span>
+                <NuxtLink class="text-link" :to="`/studio?tutorial=${lesson.slug}${(lesson.run_step??lesson.step)>=lesson.total?'&restart=1':''}`">
+                  {{ (lesson.run_step ?? lesson.step) >= lesson.total ? '再练一次' : lesson.work_id ? '带着草稿继续' : '继续这段练习' }} <span aria-hidden="true">↗</span>
                 </NuxtLink>
               </article>
             </div>

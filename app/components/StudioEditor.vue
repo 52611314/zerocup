@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import {blankModel,cloneModel,ModelHistory,COLORS,cutPath,SECTOR_PATH,clampPosition,svgMarkup,type Cut,type CutType,type PaperModel} from '../../shared/model'
 const route=useRoute(),{feedback}=useFeedback()
-const history=new ModelHistory(blankModel()),model=ref<PaperModel>(blankModel()),revision=ref(0)
+let history=new ModelHistory(blankModel()),model=ref<PaperModel>(blankModel()),revision=ref(0)
 const selected=ref<string|null>(null),tool=ref<CutType>('drop'),title=ref('我的第一朵窗花'),description=ref('')
 const id=ref<string|null>(null),version=ref(1),status=ref('draft'),savedSnapshot=ref(''),saving=ref(false),submitting=ref(false),saveError=ref(''),loading=ref(true),loadError=ref('')
 const showTemplates=ref(false),showHelp=ref(false),unfolded=ref(false),unfolding=ref(false),sectors=ref(1),hasUnfolded=ref(false)
 const chosen=computed(()=>model.value.cuts.find(c=>c.id===selected.value))
-const editable=computed(()=>['draft','rejected'].includes(status.value))
+const editable=computed(()=>['draft','rejected'].includes(status.value)&&!restartRequested.value)
 const firstCutPosition={x:56,y:22}
 const pickedTemplate=ref(false)
 const guideStep=computed(()=>{
@@ -14,7 +14,12 @@ const guideStep=computed(()=>{
  if(!model.value.cuts.length)return unfolded.value?undefined:'cut'
  return hasUnfolded.value?'save':'unfold'
 })
-const workshopStep=computed(()=>guideStep.value||(unfolded.value?'unfold':editable.value?'cut':undefined))
+const workshopStep=computed(()=>{
+ if(tutorial.value&&activeStep.value){
+  return activeStep.value.require==='save'?'save':activeStep.value.require==='unfold'?'unfold':'cut'
+ }
+ return guideStep.value||(unfolded.value?'unfold':editable.value?'cut':undefined)
+})
 const studioSteps=[
  {step:'cut',hash:'#cut-tools',label:'选形落刀'},
  {step:'unfold',hash:'#unfold-tools',label:'展开成花'},
@@ -28,13 +33,14 @@ const canUndo=computed(()=>{revision.value;return history.canUndo}),canRedo=comp
 const {data:patterns,pending:patternsLoading,error:patternsError,refresh:retryPatterns}=await useFetch<any[]>('/api/patterns',{server:false})
 const {data:tutorials}=await useFetch<any[]>('/api/tutorials',{server:false})
 const tutorial=computed(()=>tutorials.value?.find(t=>t.slug===route.query.tutorial))
+const runId=ref<string|null>(null), restartRequested=ref(route.query.restart==='1'), resumeChoices=ref<any[]>([]), legacyResume=ref(false)
 const step=ref(0),progressBusy=ref(false),progressError=ref('')
 const activeStep=computed(()=>tutorial.value?.steps[step.value])
 const requirementMet=computed(()=>{
  const req=activeStep.value?.require
  return req==='read'||req==='unfold'&&hasUnfolded.value||req==='save'&&!!id.value&&!dirty.value||model.value.cuts.some(c=>c.type===req)
 })
-async function nextStep(){if(!tutorial.value||!requirementMet.value)return;progressBusy.value=true;progressError.value='';try{await $fetch(`/api/me/progress/${tutorial.value.id}`,{method:'PUT',body:{step:step.value+1}});step.value++;feedback(step.value===tutorial.value.steps.length?'这段练习已完成，花也在你手里了。':'这一步已记下。')}catch(e){progressError.value=errorMessage(e)}finally{progressBusy.value=false}}
+async function nextStep(){if(!tutorial.value||!requirementMet.value)return;progressBusy.value=true;progressError.value='';try{await writeApi(`/api/me/progress/${tutorial.value.id}`,{method:'PUT',body:{step:step.value+1,runId:runId.value}});step.value++;feedback(step.value===tutorial.value.steps.length?'这段练习已完成，花也在你手里了。':'这一步已记下。')}catch(e){progressError.value=errorMessage(e)}finally{progressBusy.value=false}}
 function commit(next:PaperModel){history.commit(next);model.value=cloneModel(history.current);revision.value++;hasUnfolded.value=false}
 function undo(){model.value=history.undo();revision.value++;selected.value=null;hasUnfolded.value=false}
 function redo(){model.value=history.redo();revision.value++;selected.value=null;hasUnfolded.value=false}
@@ -95,23 +101,52 @@ async function save(asNew=false):Promise<boolean> {
  saving.value=true;saveError.value=''
  const sent={model:cloneModel(model.value),title:title.value.trim(),description:description.value.trim()}
  try {
-  const w=await $fetch<any>(id.value&&!asNew?`/api/works/${id.value}`:'/api/works',{method:id.value&&!asNew?'PATCH':'POST',body:{...sent,version:version.value}})
+  const w=await writeApi<any>(id.value&&!asNew?`/api/works/${id.value}`:'/api/works',{method:id.value&&!asNew?'PATCH':'POST',body:{...sent,version:version.value,runId:runId.value}})
   id.value=w.id;version.value=w.version;status.value=w.status;savedSnapshot.value=JSON.stringify(sent)
   await navigateTo({path:'/studio',query:{draft:w.id,...(route.query.tutorial?{tutorial:route.query.tutorial}:{})}},{replace:true})
   feedback('已保存到服务器，可以从我的纸笺继续。');return true
  }catch(e){saveError.value=errorMessage(e);feedback('保存没有完成，当前编辑仍保留。','error');return false}finally{saving.value=false}
 }
-async function submit(){if(submitting.value)return;submitting.value=true;try{if(dirty.value||!id.value){if(!await save())return}if(dirty.value){feedback('保存期间有新的修改，请再次保存后投稿。','error');return}const w=await $fetch<any>(`/api/works/${id.value}/submit`,{method:'POST'});version.value=w.version;status.value=w.status;feedback('投稿已送达，审核通过后会出现在纸上展览。')}catch(e){feedback(errorMessage(e),'error')}finally{submitting.value=false}}
+async function submit(){if(submitting.value)return;submitting.value=true;try{if(dirty.value||!id.value){if(!await save())return}if(dirty.value){feedback('保存期间有新的修改，请再次保存后投稿。','error');return}const w=await writeApi<any>(`/api/works/${id.value}/submit`,{method:'POST'});version.value=w.version;status.value=w.status;feedback('投稿已送达，审核通过后会出现在纸上展览。')}catch(e){feedback(errorMessage(e),'error')}finally{submitting.value=false}}
 function download(blob:Blob,suffix:string){const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`${title.value.replace(/[\\/:*?"<>|]/g,'_')||'纸上生花'}.${suffix}`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000)}
 async function exportArt(kind:'svg'|'png') {
  try{const svg=svgMarkup(model.value),blob=new Blob([svg],{type:'image/svg+xml;charset=utf-8'});if(kind==='svg'){download(blob,'svg');return}const url=URL.createObjectURL(blob),image=new Image();try{await new Promise<void>((resolve,reject)=>{image.onload=()=>resolve();image.onerror=reject;image.src=url});const canvas=document.createElement('canvas');canvas.width=1200;canvas.height=1200;canvas.getContext('2d')!.drawImage(image,0,0,1200,1200);const png=await new Promise<Blob>((resolve,reject)=>canvas.toBlob(b=>b?resolve(b):reject(new Error('PNG 导出失败')),'image/png'));download(png,'png')}finally{URL.revokeObjectURL(url)}}catch{feedback('图像导出未完成，请重试或下载 SVG。','error')}
+}
+const lessonTarget=computed(()=>activeStep.value?.require==='save'?'#save-tools':activeStep.value?.require==='unfold'?'#unfold-tools':'#cut-tools')
+async function restoreWork(workId:string){
+ const work=await $fetch<any>('/api/me/works/'+workId)
+ model.value=work.model;id.value=work.id;title.value=work.title;description.value=work.description;version.value=work.version;status.value=work.status;savedSnapshot.value=snapshot()
+ history=new ModelHistory(model.value);revision.value++;resumeChoices.value=[];legacyResume.value=false
+}
+async function restartLesson(){
+ if(!tutorial.value)return
+ progressBusy.value=true;progressError.value=''
+ try{
+  const run=await writeApi<any>('/api/me/practice/'+tutorial.value.id,{method:'POST',body:{restart:true}})
+  runId.value=run.id;step.value=0;id.value=null;status.value='draft';version.value=1
+  model.value=blankModel();title.value='我的第一朵窗花';description.value='';savedSnapshot.value=''
+  history=new ModelHistory(model.value);revision.value++;hasUnfolded.value=false;fold()
+  restartRequested.value=false;resumeChoices.value=[]
+  await navigateTo({path:'/studio',query:{tutorial:tutorial.value.slug},hash:route.hash},{replace:true})
+ }catch(e){progressError.value=errorMessage(e)}finally{progressBusy.value=false}
 }
 async function load(){loading.value=true;loadError.value='';try{
  if(route.query.draft){const w=await $fetch<any>(`/api/me/works/${route.query.draft}`);model.value=w.model;id.value=w.id;title.value=w.title;description.value=w.description;version.value=w.version;status.value=w.status;savedSnapshot.value=snapshot()}
  else if(route.query.remix){const w=await $fetch<any>(`/api/gallery/${route.query.remix}`);model.value=w.model;title.value=`${w.title} · 新意`.slice(0,60)}
  else if(route.query.pattern){const list=await $fetch<any[]>('/api/patterns'),p=list.find(p=>p.id===route.query.pattern);if(p){model.value=p.model;title.value=p.name}}
- history.current=cloneModel(model.value);revision.value++
- if(route.query.tutorial){const progress=await $fetch<any[]>('/api/me/progress');const t=(tutorials.value||await $fetch<any[]>('/api/tutorials')).find(t=>t.slug===route.query.tutorial);if(t)step.value=progress.find(p=>p.tutorial_id===t.id)?.step||0}
+ history=new ModelHistory(model.value);revision.value++
+ if(route.query.tutorial){
+  const t=(tutorials.value||await $fetch<any[]>('/api/tutorials')).find(t=>t.slug===route.query.tutorial)
+  if(t && !restartRequested.value){
+   const run=await writeApi<any>('/api/me/practice/'+t.id,{method:'POST',body:{restart:false}})
+   runId.value=run.id;step.value=run.step
+   if(run.work_id && !route.query.draft)await restoreWork(run.work_id)
+   else if(!run.work_id){
+    const progress=await $fetch<any[]>('/api/me/progress')
+    if(progress.some(p=>p.tutorial_id===t.id&&p.step>0)){legacyResume.value=true;resumeChoices.value=(await $fetch<any[]>('/api/me/works')).filter(w=>['draft','rejected'].includes(w.status))}
+   }
+  }
+ }
  }catch(e){loadError.value=errorMessage(e)}finally{loading.value=false}}
 function beforeUnload(e:BeforeUnloadEvent){if(dirty.value&&model.value.cuts.length){e.preventDefault()}}
 function keyboard(e:KeyboardEvent){if((e.target as HTMLElement).matches('input,textarea,select'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&editable.value){e.preventDefault();e.shiftKey?redo():undo()}}
@@ -153,7 +188,9 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
    <p>选择圆、三角或水滴，点纸面放置，或用“添加到纸面”。选中切口后，用方向按钮与滑杆调整。展开时，同一个切口经镜像和旋转组成完整图案。</p>
    <p>保存后可以回到我的纸笺继续创作，也可以下载透明背景的 SVG 或 PNG。待审核及已展出的作品可以查看、下载和另存为新草稿。</p>
   </div>
-  <section v-if="tutorial" class="tutorial-guide" aria-label="渐进教程"><div><p class="eyebrow">正在练习 · {{tutorial.title}} / {{Math.min(step+1,tutorial.steps.length)}} of {{tutorial.steps.length}}</p><h2>{{activeStep?.title||'练习完成，花开在纸上。'}}</h2><p>{{activeStep?.text||'可以继续自由创作，也可以把这份心意送到展览。'}}</p><p v-if="progressError" class="inline-error" role="alert">{{progressError}}</p></div><button v-if="activeStep" class="btn" @click="nextStep" :disabled="!requirementMet||progressBusy">{{progressBusy?'正在记录…':requirementMet?'记下这一步 →':'完成当前操作后继续'}}</button><NuxtLink v-else class="text-link" to="/tutorials">继续下一段练习 ↗</NuxtLink></section>
+  <section v-if="restartRequested" class="studio-help"><h2>再剪一次，从第一刀开始</h2><p>以前完成的学习记录与草稿会保留。这次从一张新纸开始。</p><button class="btn primary" :disabled="progressBusy" @click="restartLesson">开始新的练习</button><p v-if="progressError" role="alert">{{progressError}}</p></section>
+  <section v-if="legacyResume" class="studio-help"><h2>已有学习足迹，选一张纸继续</h2><p>旧记录尚未关联作品，请选择自己的草稿；也可留在当前新纸，重新完成动作。</p><button v-for="work in resumeChoices" :key="work.id" class="btn" @click="restoreWork(work.id).catch(e=>feedback(errorMessage(e),'error'))">{{work.title}}</button><button class="btn" @click="resumeChoices=[];legacyResume=false">用当前新纸练习</button></section>
+  <section v-if="tutorial&&!restartRequested" class="tutorial-guide" aria-label="渐进教程"><div><p class="eyebrow">正在练习 · {{tutorial.title}} / {{Math.min(step+1,tutorial.steps.length)}} of {{tutorial.steps.length}}</p><h2>{{activeStep?.title||'练习完成，花开在纸上。'}}</h2><p>{{activeStep?.text||'可以继续自由创作，也可以把这份心意送到展览。'}}</p><p v-if="progressError" class="inline-error" role="alert">{{progressError}}</p></div><button v-if="activeStep" class="btn" @click="nextStep" :disabled="!requirementMet||progressBusy||!runId">{{progressBusy?'正在记录…':requirementMet?'记下这一步 →':'完成当前操作后继续'}}</button><NuxtLink v-else class="text-link" to="/tutorials">继续下一段练习 ↗</NuxtLink></section>
   <div v-if="!editable" class="status-banner" role="status">{{status==='pending'?'这张纸已送审，审核期间暂时收好。':'这张纸已在展览中。'}}<button class="text-link" :disabled="saving" @click="save(true)">另存新草稿继续创作 ↗</button></div>
   <div class="studio-workspace" data-studio-controls>
    <nav class="studio-steps" aria-label="工坊流程">
@@ -207,6 +244,8 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <div class="canvas-watermark" aria-hidden="true">纸上生花<span>留白 · 对称 · 展开</span></div>
      </div>
      <div id="unfold-tools" class="canvas-bottom" :class="{'guide-save-ready':guideStep==='save','studio-target':route.hash==='#unfold-tools'}" tabindex="-1" role="group" aria-label="展开作品操作">
+      <LessonPrompt v-if="tutorial&&!restartRequested" :current="activeStep" :step="step" :total="tutorial.steps.length" area="unfold" :target="lessonTarget" :ready="requirementMet" :busy="progressBusy" :error="progressError" @next="nextStep"/>
+
       <p aria-live="polite">
        <template v-if="guideStep==='cut'"><strong>落下第一刀</strong><span class="guide-detail">点红纸上的标记，剪一个{{cutNames[tool]}}。</span></template>
        <template v-else-if="guideStep==='unfold'"><strong>展开看看</strong><span class="guide-detail">一个切口，会在八个方向成花。</span></template>
@@ -236,6 +275,8 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <div class="history-tools"><button aria-label="撤销" :disabled="!canUndo||!editable" @click="undo">↶</button><button aria-label="重做" :disabled="!canRedo||!editable" @click="redo">↷</button></div>
      </div>
      <fieldset :disabled="!editable||unfolded">
+      <LessonPrompt v-if="tutorial&&!restartRequested" :current="activeStep" :step="step" :total="tutorial.steps.length" area="cut" :target="lessonTarget" :ready="requirementMet" :busy="progressBusy" :error="progressError" @next="nextStep"/>
+
       <legend><span>01</span> 选一个切口</legend>
       <div class="shape-tools">
        <button v-for="(name,k) in cutNames" :key="k" :class="{selected:tool===k}" @click="tool=k as CutType" :aria-pressed="tool===k">
@@ -290,6 +331,8 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       </Transition>
      </fieldset>
      <section id="save-tools" class="save-panel" :class="{'studio-target':route.hash==='#save-tools'}" tabindex="-1" aria-label="留存作品">
+      <LessonPrompt v-if="tutorial&&!restartRequested" :current="activeStep" :step="step" :total="tutorial.steps.length" area="save" :target="lessonTarget" :ready="requirementMet" :busy="progressBusy" :error="progressError" @next="nextStep"/>
+
       <p class="eyebrow">03 / 留存作品</p>
       <h2>把心意收好</h2>
       <label for="work-title">作品名称</label>

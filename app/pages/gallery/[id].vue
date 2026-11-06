@@ -30,7 +30,7 @@ onMounted(async () => {
 async function favorite() {
   busy.value = true
   try {
-    await $fetch(`/api/me/favorites/${encodeURIComponent(id)}`, { method: saved.value ? 'DELETE' : 'PUT' })
+    await writeApi(`/api/me/favorites/${encodeURIComponent(id)}`, { method: saved.value ? 'DELETE' : 'PUT' })
     saved.value = !saved.value
     feedback(saved.value ? '已收进我的收藏。' : '已取消收藏。')
   } catch (error) {

@@ -1,4 +1,7 @@
-export default defineEventHandler(event=>{
+import { allowedWriteOrigin,csrfOriginEligible } from '../../shared/request-origin'
+import {hasSessionCsrf} from '../utils/csrf'
+
+export default defineEventHandler(async event=>{
  setResponseHeader(event,'X-Content-Type-Options','nosniff')
  setResponseHeader(event,'Referrer-Policy','strict-origin-when-cross-origin')
  setResponseHeader(event,'X-Frame-Options','DENY')
@@ -7,7 +10,21 @@ export default defineEventHandler(event=>{
  if(['POST','PUT','PATCH','DELETE'].includes(event.method)) {
   const origin=getRequestHeader(event,'origin')
   const site=process.env.SITE_URL || 'http://127.0.0.1:3000'
-  if(origin!==new URL(site).origin)throw createError({statusCode:403,message:'请求来源不匹配，请从本站页面重新操作。'})
+  const requestOrigin=getRequestURL(event,{xForwardedHost:false,xForwardedProto:false}).origin
+  const allowedOrigin=allowedWriteOrigin(origin,site,requestOrigin,import.meta.dev)
+  // Require session proof for omitted headers or altered loopback ports in dev.
+  // A foreign hostname never receives the loopback exception.
+  const tokenFallback=!allowedOrigin&&csrfOriginEligible(origin,requestOrigin,import.meta.dev)&&await hasSessionCsrf(event)
+  if(!allowedOrigin&&!tokenFallback)throw createError({
+   statusCode:403,
+   message:'请求来源不匹配，请确认访问地址与服务配置一致后重试。',
+   data:import.meta.dev?{
+    origin:origin??null,
+    requestOrigin,
+    configuredOrigin:new URL(site).origin,
+    fetchSite:getRequestHeader(event,'sec-fetch-site')??null,
+   }:undefined,
+  })
   if(Number(getRequestHeader(event,'content-length')||0)>65536)throw createError({statusCode:413,message:'提交内容超过 64KB。'})
  }
 })

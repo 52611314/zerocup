@@ -12,7 +12,7 @@
     "db:local": "node --env-file=.env scripts/local-postgres.mjs",
     "db:migrate": "node --env-file=.env scripts/migrate.mjs",
     "db:seed": "tsx --env-file=.env scripts/seed.ts",
-    "test": "tsx --test tests/model.test.ts",
+    "test": "tsx --test tests/model.test.ts tests/request-origin.test.ts",
     "test:api": "tsx --env-file=.env --test tests/api.test.ts",
     "test:browser": "node --env-file=.env scripts/browser-check.mjs",
     "typecheck": "nuxt typecheck",

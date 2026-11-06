@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import {SWALLOW_PATH} from '../../shared/swallow'
 withDefaults(defineProps<{ reversed?: boolean }>(), { reversed: false })
 
 const id = useId().replaceAll(':', '')
@@ -38,12 +39,7 @@ const outline = [
         <circle cx="200" cy="90" r="2" />
       </g>
       <g :id="`${id}-swallow`">
-        <path d="M274 126
-          252 117c-7-10-19-12-29-4-8 7-12 13-22 15
-          -25-14-44-38-58-66-5 27 8 56 31 79
-          -17 5-32 12-46 20l-38-12 18 20-31 26 56-17
-          c24-8 41-11 59-12 11 10 17 21 17 34
-          13-15 18-32 16-51 13-5 22-12 27-22Z" />
+        <path :d="SWALLOW_PATH" />
         <circle class="swallow-eye" cx="239" cy="116.4" r="2" />
       </g>
     </defs>

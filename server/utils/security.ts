@@ -16,6 +16,7 @@ export async function visitor(event:H3Event, create=true):Promise<string> {
  if(!create) throw createError({statusCode:401,message:'访客会话已过期，请回到我的纸笺重新开始。'})
  const raw=randomBytes(32).toString('hex'),id=randomUUID()
  await query("INSERT INTO visitor_sessions(id,token_hash,expires_at) VALUES($1,$2,now()+interval '90 days')",[id,hashToken(raw)])
+ event.context.paperVisitorToken=raw
  cookie(event,'paper_visitor',raw,90*86400); return id
 }
 export async function admin(event:H3Event) {
@@ -36,7 +37,7 @@ export async function login(event:H3Event,username:string,password:string) {
 export async function rateLimit(event:H3Event,scope:string,max=90,seconds=60) {
  const key=hashToken(`${scope}:${getRequestIP(event)||'local'}`)
  const [r]=await query('INSERT INTO rate_limits(key,hits,reset_at) VALUES($1,1,now()+make_interval(secs=>$2)) ON CONFLICT(key) DO UPDATE SET hits=CASE WHEN rate_limits.reset_at<now() THEN 1 ELSE rate_limits.hits+1 END, reset_at=CASE WHEN rate_limits.reset_at<now() THEN now()+make_interval(secs=>$2) ELSE rate_limits.reset_at END RETURNING hits',[key,seconds])
- if(r.hits>max){setResponseHeader(event,'Retry-After',String(seconds));throw createError({statusCode:429,message:'操作有些频繁，请稍后再试。'})}
+ if(r.hits>max){setResponseHeader(event,'Retry-After',seconds);throw createError({statusCode:429,message:'操作有些频繁，请稍后再试。'})}
 }
 export async function jsonBody(event:H3Event) {
  const raw=await readRawBody(event)
