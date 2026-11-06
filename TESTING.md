@@ -90,3 +90,7 @@ Windows，Node 24.13.0，真实 PostgreSQL 17.6。生产构建成功，测试访
 慢响应和故障采用接口注入。布局检查是桌面 Chrome 的视口模拟，未使用实体手机、Chrome 129 或 IE。重启验证针对应用进程，未独立断电测试数据库。PNG 的实际像素、全站读屏体验与真实网络限速未作专项验证。
 
 测试环境需已运行数据库和应用，先运行迁移及种子。后台账号取自本机 .env，请勿随包提交。运行 npm run package:anonymous 创建匿名源码包；完整版先填写 TEAM.md，再运行 npm run package:full。两个包的最终文件名由参赛队核对当届通知后确定。
+# 2026-11-06 拉取版本本地核验
+
+对快进拉取的 3bb78f4 执行 npm test 与 npm run build，3 项几何测试及生产构建通过。执行 npm run typecheck 仍失败，涉及 server/utils/security.ts 中 Retry-After 值类型、Nuxt routeRules 的 headers 配置类型、Nitro preset 配置类型及 resolveId 参数类型。本轮仅核验构建、几何测试和代码，既有浏览器与数据库测试结果沿用下方历史记录。
+
