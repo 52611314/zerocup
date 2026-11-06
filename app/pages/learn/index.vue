@@ -75,8 +75,8 @@ function find(nextCategory = category.value, text = query.value.trim()) {
           清除筛选 <span aria-hidden="true">×</span>
         </button>
       </div>
-      <AsyncState :pending="pending" :error="error" :empty="!data?.length" @retry="refresh">
-        <div class="journal-grid">
+      <AsyncState :pending="pending && !data" :error="error" :empty="!data?.length" @retry="refresh">
+        <div class="journal-grid" :aria-busy="pending">
           <NuxtLink v-for="(article, index) in data" :key="article.id" :to="`/learn/${article.slug}`" class="journal-card">
             <div class="journal-art" aria-hidden="true">
               <PaperArt :model="starterModels[(index + 1) % starterModels.length]!" />
@@ -181,11 +181,6 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   width: min(75%, 180px);
   transform: rotate(-10deg);
   filter: drop-shadow(3px 4px 3px #51271538);
-  transition: transform .4s cubic-bezier(.22, .7, .25, 1);
-}
-
-.journal-card:is(:hover, :focus-visible) .paper-art {
-  transform: rotate(0) scale(1.05);
 }
 
 .journal-art > span {
@@ -198,12 +193,30 @@ function find(nextCategory = category.value, text = query.value.trim()) {
 }
 
 .journal-copy {
+  position: relative;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: flex-start;
   gap: 9px;
   padding: clamp(14px, 2.2vw, 30px);
+}
+
+.journal-copy::before {
+  position: absolute;
+  inset: 0 0 auto auto;
+  width: 4px;
+  height: 42%;
+  transform: scaleY(0);
+  transform-origin: top;
+  background: var(--red);
+  content: '';
+}
+
+.journal-card:is(:hover, :focus-visible) .journal-copy::before { transform: scaleY(1); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .journal-copy::before { transition: transform .28s cubic-bezier(.22, .7, .25, 1); }
 }
 
 .journal-category,
@@ -261,9 +274,4 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .journal-card:is(:hover, :focus-visible) .paper-art {
-    transform: rotate(-10deg);
-  }
-}
 </style>

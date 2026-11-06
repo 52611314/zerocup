@@ -85,7 +85,7 @@ onBeforeUnmount(() => {
      <button class="btn opening-toggle" type="button" aria-controls="swallow-plate" @click="reversed = !reversed">
       {{ reversed ? '看团花' : '看留白' }} <span aria-hidden="true">↔</span>
      </button>
-     <a class="opening-next" href="#discover">穿过剪纸窗 <span aria-hidden="true">↓</span></a>
+     <NuxtLink class="opening-next" :to="{ path: '/', hash: '#discover' }">穿过剪纸窗 <span aria-hidden="true">↓</span></NuxtLink>
     </div>
    </div>
    <figure id="swallow-plate" class="opening-plate" :class="{ 'plate-negative': reversed }">
@@ -99,7 +99,7 @@ onBeforeUnmount(() => {
   </div>
  </section>
 
- <div id="discover"><PaperWindows/></div>
+ <div id="discover" tabindex="-1"><PaperWindows/></div>
  <PaperScenes/>
 
  <section id="fold-and-light" class="workshop-band">

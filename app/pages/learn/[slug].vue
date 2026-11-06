@@ -37,15 +37,25 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
           <span class="eyebrow">本页目录</span>
           <ol>
             <li v-for="(section, index) in article.body" :key="index">
-              <a :href="`#section-${index}`">
+              <NuxtLink
+                :to="{ path: route.path, query: route.query, hash: `#section-${index}` }"
+                :aria-current="route.hash === `#section-${index}` ? 'location' : undefined"
+              >
                 <span aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
                 {{ section.heading }}
-              </a>
+              </NuxtLink>
             </li>
           </ol>
         </nav>
         <div class="article-main">
-          <section v-for="(section, index) in article.body" :id="`section-${index}`" :key="index" class="article-section">
+          <section
+            v-for="(section, index) in article.body"
+            :id="`section-${index}`"
+            :key="index"
+            class="article-section"
+            :class="{ 'article-section-target': route.hash === `#section-${index}` }"
+            tabindex="-1"
+          >
             <span class="journal-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
             <div>
               <h2>{{ section.heading }}</h2>
@@ -115,9 +125,11 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
 
 .article-toc ol { list-style: none; margin: 8px 0 0; padding: 0; }
 .article-toc a { display: flex; gap: 8px; align-items: baseline; margin: 0; padding: 6px 0; font-size: 14px; }
+.article-toc a[aria-current="location"] { color: var(--red); text-decoration: underline; text-underline-offset: .25em; }
 .article-toc a span, .journal-number { color: var(--red); font: 14px Georgia, serif; font-variant-numeric: tabular-nums; }
 
 .article-section {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: clamp(12px, 2.3vw, 30px);
@@ -125,6 +137,31 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
   margin: 0;
   padding: clamp(18px, 3vw, 33px) 0;
   border-bottom: 1px solid var(--line);
+}
+
+.article-section-target {
+  border-bottom-color: var(--red);
+}
+
+.article-section-target h2 { color: var(--red); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .article-section-target::after {
+    position: absolute;
+    inset: auto 0 -1px;
+    height: 1px;
+    background: var(--red);
+    transform-origin: left;
+    animation: mark-passage .42s ease-out both;
+    content: '';
+  }
+
+  .article-section-target { border-bottom-color: var(--line); }
+
+  @keyframes mark-passage {
+    from { transform: scaleX(0); }
+    to { transform: scaleX(1); }
+  }
 }
 
 .article-section:first-child { padding-top: 0; }

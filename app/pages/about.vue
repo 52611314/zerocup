@@ -3,6 +3,10 @@ import { starterModels } from '../../shared/patterns'
 
 usePageMeta('关于与来源', '纸上生花的设计说明、文化资料来源、数字创作边界与操作帮助。')
 
+const specimen = starterModels[3]!
+const reverseSpecimen = { ...specimen, color: '#f5dfb3' }
+const reverse = ref(false)
+
 const sources = [
   {
     publisher: '中国非物质文化遗产网',
@@ -31,9 +35,19 @@ const sources = [
         <h1>一纸背后的心意。</h1>
         <p class="article-lead">以剪纸为入口，让阅读、动手和分享在这里相遇。</p>
       </div>
-      <figure class="about-figure">
-        <PaperArt :model="starterModels[3]!" label="原创八重对称剪纸示意" />
-        <figcaption>八重对称 · 数字示意</figcaption>
+      <figure class="about-figure" :class="{ 'specimen-reverse': reverse }">
+        <div class="about-paper-stage" aria-hidden="true">
+          <div class="about-paper">
+            <div class="about-paper-face"><PaperArt :model="specimen" /></div>
+            <div class="about-paper-face about-paper-reverse"><PaperArt :model="reverseSpecimen" /></div>
+          </div>
+        </div>
+        <figcaption>
+          <span aria-live="polite">{{ reverse ? '留白 · 反面' : '朱纸 · 正面' }}</span>
+          <button class="specimen-toggle" type="button" :aria-pressed="reverse" @click="reverse = !reverse">
+            看反面 <span aria-hidden="true">↻</span>
+          </button>
+        </figcaption>
       </figure>
     </header>
 
@@ -114,19 +128,65 @@ const sources = [
 
 .about-figure {
   display: grid;
-  place-items: center;
+  justify-items: stretch;
   margin: 0;
-  padding: 10px 18px;
-  background: radial-gradient(ellipse at center, #f8edd7 8%, #ebdcc0 80%);
+  background: #f8edd7;
   border: 1px solid var(--line);
 }
 
-.about-figure :deep(.paper-art) {
-  width: min(62%, 210px);
-  filter: drop-shadow(0 8px 6px #42271d23);
+.about-paper-stage {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  perspective: 680px;
+  background: radial-gradient(ellipse at center, #f8edd7 8%, #ebdcc0 80%);
 }
 
-.about-figure figcaption { color: var(--muted); font-size: 12px; letter-spacing: .12em; }
+.about-paper {
+  display: grid;
+  width: min(62%, 210px);
+  transform-style: preserve-3d;
+  transition: transform .47s cubic-bezier(.36,.55,.34,1);
+}
+
+.specimen-reverse .about-paper { transform: rotateY(180deg); }
+
+.about-paper-face {
+  position: relative;
+  grid-area: 1 / 1;
+  backface-visibility: hidden;
+}
+
+.about-paper-face :deep(.paper-art) { position: relative; filter: drop-shadow(0 6px 5px #42271d32); }
+.about-paper-reverse { transform: rotateY(180deg); }
+.about-paper-reverse::before {
+  position: absolute;
+  inset: 4%;
+  border-radius: 50%;
+  background: #85251e;
+  content: '';
+}
+
+.about-figure figcaption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 0 12px;
+  border-block-start: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 12px;
+  letter-spacing: .08em;
+}
+
+.specimen-toggle {
+  padding: 8px 0;
+  border: 0;
+  color: var(--red);
+  font-weight: 700;
+}
+.specimen-toggle span { display: inline-block; margin-inline-start: 3px; transition: transform .3s ease; }
+.specimen-toggle[aria-pressed="true"] span { transform: rotate(180deg); }
 
 .about-content .about-section {
   display: grid;
@@ -155,7 +215,8 @@ const sources = [
 }
 .source-list a:hover { background: #efdfc5; }
 .source-list small { display: block; color: var(--muted); font-size: 14px; }
-.source-arrow { color: var(--red); }
+.source-arrow { color: var(--red); transition: transform .22s ease; }
+.source-list a:is(:hover, :focus-visible) .source-arrow { transform: translate(2px, -2px); }
 .source-note { color: var(--muted); font-size: 13px; }
 .about-steps { margin: 0; padding-left: 1.35em; }
 .about-steps li { padding: 0 0 7px .35em; }
@@ -173,7 +234,12 @@ const sources = [
 
 @media (max-width: 670px) {
   .about-heading, .about-content .about-section { grid-template-columns: 1fr; }
-  .about-figure :deep(.paper-art) { width: min(50%, 145px); }
+  .about-paper { width: min(50%, 145px); }
   .about-section h2 span { display: inline; margin-right: 5px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-paper, .specimen-toggle span, .source-arrow { transition: none !important; }
+  .source-list a:is(:hover, :focus-visible) .source-arrow { transform: none; }
 }
 </style>

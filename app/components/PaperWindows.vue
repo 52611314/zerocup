@@ -10,6 +10,7 @@ const windows = [
 
 type WindowEntry = typeof windows[number]
 const passage = ref<{ entry: WindowEntry; x: number; y: number }>()
+const paperWindowTarget = useState('paper-window-target', () => '')
 let timer: ReturnType<typeof setTimeout> | undefined
 let destination: WindowEntry['to'] | undefined
 
@@ -21,11 +22,14 @@ function cancelPassage() {
 }
 
 async function goTo(entry: WindowEntry) {
+  if (passage.value) paperWindowTarget.value = entry.to
   try {
     const result = await navigateTo(entry.to)
     if (result === false || isNavigationFailure(result)) cancelPassage()
   } catch {
     cancelPassage()
+  } finally {
+    if (paperWindowTarget.value === entry.to) paperWindowTarget.value = ''
   }
 }
 

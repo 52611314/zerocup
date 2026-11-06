@@ -4,9 +4,10 @@ const menu = ref(false)
 const menuButton = ref<HTMLButtonElement>()
 const { notice } = useFeedback()
 const currentSection = computed(() => '/' + route.path.split('/')[1])
-const pageTransition = { name: 'paper-page', mode: 'out-in' as const }
+const pageMotion = useState('paper-route-motion', () => 'paper-chapter')
+const pageTransition = computed(() => ({ name: pageMotion.value, mode: 'out-in' as const }))
 
-watch(() => route.fullPath, () => {
+watch(() => route.path, () => {
   menu.value = false
   notice.value.text = ''
 })
@@ -27,7 +28,7 @@ function dismissMenu() {
 </script>
 
 <template>
- <div>
+ <div id="site-top" tabindex="-1">
   <NuxtRouteAnnouncer />
   <PaperNavigation/>
   <PaperWeather/>
@@ -47,8 +48,10 @@ function dismissMenu() {
     <NuxtLink to="/me" class="personal-link" @click="menu = false">我的纸笺 <span aria-hidden="true">↗</span></NuxtLink>
    </header>
   </div>
-  <main id="main"><NuxtPage :transition="pageTransition" /></main>
-  <div v-if="notice.text" class="toast" :class="notice.kind" role="status">{{ notice.text }}<button @click="notice.text = ''" aria-label="关闭提示">×</button></div>
+  <main id="main" tabindex="-1"><NuxtPage :transition="pageTransition" /></main>
+  <Transition name="paper-note">
+   <div v-if="notice.text" class="toast" :class="notice.kind" role="status">{{ notice.text }}<button @click="notice.text = ''" aria-label="关闭提示">×</button></div>
+  </Transition>
   <div class="footer-frame">
    <footer class="site-footer">
     <div>
@@ -59,7 +62,7 @@ function dismissMenu() {
      <NuxtLink to="/tutorials">入门教程</NuxtLink>
      <NuxtLink to="/about">关于与来源</NuxtLink>
      <NuxtLink to="/admin">展馆管理</NuxtLink>
-     <a href="#main">回到顶部 ↑</a>
+     <NuxtLink :to="{ path: route.path, query: route.query, hash: '#site-top' }">回到顶部 ↑</NuxtLink>
     </div>
     <small>2026 零杯网页设计大赛<br/>匠心传成，非遗焕新</small>
    </footer>

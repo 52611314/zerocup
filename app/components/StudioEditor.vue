@@ -15,6 +15,11 @@ const guideStep=computed(()=>{
  return hasUnfolded.value?'save':'unfold'
 })
 const workshopStep=computed(()=>guideStep.value||(unfolded.value?'unfold':editable.value?'cut':undefined))
+const studioSteps=[
+ {step:'cut',hash:'#cut-tools',label:'选形落刀'},
+ {step:'unfold',hash:'#unfold-tools',label:'展开成花'},
+ {step:'save',hash:'#save-tools',label:'留存作品'},
+] as const
 const cutNames:Record<CutType,string>={circle:'圆形',triangle:'三角形',drop:'水滴'}
 const colorNames=['朱砂红','深绛红','赭红','墨黑']
 const snapshot=()=>JSON.stringify({model:model.value,title:title.value,description:description.value})
@@ -44,11 +49,27 @@ function patch(field:'size'|'aspect'|'angle',value:number){if(!chosen.value)retu
 function move(dx:number,dy:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;Object.assign(c,clampPosition(c.x+dx,c.y+dy));commit(next)}
 function remove(){const next=cloneModel(model.value);next.cuts=next.cuts.filter(c=>c.id!==selected.value);commit(next);selected.value=null}
 function color(value:string){const next=cloneModel(model.value);next.color=value;commit(next)}
-function template(p:any){if(!editable.value)return;commit(p.model);pickedTemplate.value=true;selected.value=null;showTemplates.value=false;feedback(`已铺开「${p.name}」的起始纹样。`)}
+const templateControl=ref<HTMLButtonElement>()
+const canvasRegister=ref<HTMLElement>()
+function template(p:any) {
+ if(!editable.value)return
+ commit(p.model)
+ pickedTemplate.value=true
+ selected.value=null
+ showTemplates.value=false
+ templateControl.value?.focus({preventScroll:true})
+ if(!matchMedia('(prefers-reduced-motion: reduce)').matches) {
+  canvasRegister.value?.animate(
+   [{boxShadow:'0 0 0 1px #ad292060'},{boxShadow:'0 0 0 7px #ad292000'}],
+   {duration:530,easing:'ease-out'},
+  )
+ }
+ feedback(`已铺开「${p.name}」的起始纹样。`)
+}
 const board=ref<SVGSVGElement>(),drag=ref<{id:string;original:PaperModel;moved:boolean;pointer:number}|null>(null)
 function eventPosition(e:PointerEvent){const svg=board.value!;const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM()!.inverse());return clampPosition(point.x,point.y)}
 function pointerDown(e:PointerEvent,cutId?:string) {
- if(!editable.value||e.button!==0)return
+ if(!editable.value||unfolded.value||e.button!==0)return
  if(!cutId){if((e.target as Element).closest('[data-paper]'))add(eventPosition(e));return}
  selected.value=cutId;drag.value={id:cutId,original:cloneModel(model.value),moved:false,pointer:e.pointerId};board.value?.setPointerCapture(e.pointerId)
 }
@@ -62,6 +83,13 @@ function unfold(){const token=++animationGeneration;unfolded.value=true;hasUnfol
 }
 function skip(){animationGeneration++;sectors.value=8;unfolding.value=false}
 function fold(){skip();unfolded.value=false}
+let motionPreference:MediaQueryList|undefined
+function motionChanged(event:MediaQueryListEvent) {
+ if(!event.matches)return
+ fallingCut.value=null
+ canvasRegister.value?.getAnimations().forEach(animation=>animation.cancel())
+ if(unfolding.value)skip()
+}
 async function save(asNew=false):Promise<boolean> {
  if(saving.value)return false
  saving.value=true;saveError.value=''
@@ -87,8 +115,24 @@ async function load(){loading.value=true;loadError.value='';try{
  }catch(e){loadError.value=errorMessage(e)}finally{loading.value=false}}
 function beforeUnload(e:BeforeUnloadEvent){if(dirty.value&&model.value.cuts.length){e.preventDefault()}}
 function keyboard(e:KeyboardEvent){if((e.target as HTMLElement).matches('input,textarea,select'))return;if((e.ctrlKey||e.metaKey)&&e.key.toLowerCase()==='z'&&editable.value){e.preventDefault();e.shiftKey?redo():undo()}}
-onMounted(()=>{load();window.addEventListener('beforeunload',beforeUnload);window.addEventListener('keydown',keyboard)})
-onBeforeUnmount(()=>{animationGeneration++;window.removeEventListener('beforeunload',beforeUnload);window.removeEventListener('keydown',keyboard)})
+onMounted(async()=>{
+ window.addEventListener('beforeunload',beforeUnload)
+ window.addEventListener('keydown',keyboard)
+ motionPreference=matchMedia('(prefers-reduced-motion: reduce)')
+ motionPreference.addEventListener('change',motionChanged)
+ await load()
+ await nextTick()
+ const hash=location.hash
+ if(hash==='#work-title'||studioSteps.some(section=>section.hash===hash)) {
+  document.getElementById(hash.slice(1))?.scrollIntoView({block:'start'})
+ }
+})
+onBeforeUnmount(()=>{
+ animationGeneration++
+ motionPreference?.removeEventListener('change',motionChanged)
+ window.removeEventListener('beforeunload',beforeUnload)
+ window.removeEventListener('keydown',keyboard)
+})
 onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)return window.confirm('这张纸还有未保存的修改，确定离开吗？')})
 </script>
 <template>
@@ -113,9 +157,9 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
   <div v-if="!editable" class="status-banner" role="status">{{status==='pending'?'这张纸已送审，审核期间暂时收好。':'这张纸已在展览中。'}}<button class="text-link" :disabled="saving" @click="save(true)">另存新草稿继续创作 ↗</button></div>
   <div class="studio-workspace" data-studio-controls>
    <nav class="studio-steps" aria-label="工坊流程">
-    <a href="#cut-tools" :aria-current="workshopStep==='cut'?'step':undefined"><span>01</span> 选形落刀 <i>↘</i></a>
-    <a href="#unfold-tools" :aria-current="workshopStep==='unfold'?'step':undefined"><span>02</span> 展开成花 <i>↘</i></a>
-    <a href="#save-tools" :aria-current="workshopStep==='save'?'step':undefined"><span>03</span> 留存作品 <i>↘</i></a>
+    <NuxtLink v-for="(section,index) in studioSteps" :key="section.step" :to="{path:route.path,query:route.query,hash:section.hash}" custom v-slot="{navigate}">
+     <a :href="section.hash" :aria-current="workshopStep===section.step?'step':undefined" @click="navigate"><span>0{{index+1}}</span> {{section.label}} <i aria-hidden="true">↘</i></a>
+    </NuxtLink>
    </nav>
    <div class="studio-layout">
     <section class="studio-canvas-area" aria-label="创作纸面">
@@ -124,8 +168,9 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <span class="cut-count">{{model.cuts.length}} / 80 个切口</span>
      </div>
      <div class="canvas-surface" :class="{expanded:unfolded}">
-      <div class="surface-register" aria-hidden="true"><i/><i/><i/><i/></div>
-      <div class="surface-meta" aria-hidden="true">{{unfolded?'整张圆纸':'基础扇区'}}<span>{{unfolded?'360° · 8/8':'45° · 1/8'}}</span></div>
+      <div ref="canvasRegister" class="surface-register" aria-hidden="true"><i/><i/><i/><i/></div>
+      <div class="surface-meta" aria-hidden="true">{{unfolded?'展开纸面':'基础扇区'}}<span>{{unfolded?`${sectors*45}° · ${sectors}/8`:'45° · 1/8'}}</span></div>
+      <Transition name="studio-paper">
       <div v-if="unfolded" class="unfold-stage" :class="{unfolding}">
        <PaperArt :model="model" :sectors="sectors" :label="title+'的真实展开图案'"/>
        <span v-if="unfolding" class="unfold-caption">一折，一折，花开了。</span>
@@ -158,9 +203,10 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
        <text x="5" y="-5" class="board-label">折线</text>
        <text x="72" y="83" class="board-label">1/8 纸面</text>
       </svg>
+      </Transition>
       <div class="canvas-watermark" aria-hidden="true">纸上生花<span>留白 · 对称 · 展开</span></div>
      </div>
-     <div id="unfold-tools" class="canvas-bottom" :class="{'guide-save-ready':guideStep==='save'}">
+     <div id="unfold-tools" class="canvas-bottom" :class="{'guide-save-ready':guideStep==='save','studio-target':route.hash==='#unfold-tools'}" tabindex="-1" role="group" aria-label="展开作品操作">
       <p aria-live="polite">
        <template v-if="guideStep==='cut'"><strong>落下第一刀</strong><span class="guide-detail">点红纸上的标记，剪一个{{cutNames[tool]}}。</span></template>
        <template v-else-if="guideStep==='unfold'"><strong>展开看看</strong><span class="guide-detail">一个切口，会在八个方向成花。</span></template>
@@ -184,7 +230,7 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <button @click="exportArt('png')">下载 PNG ↓</button>
      </div>
     </section>
-    <aside id="cut-tools" class="studio-tools" aria-label="剪纸工具">
+    <aside id="cut-tools" class="studio-tools" :class="{'studio-target':route.hash==='#cut-tools'}" tabindex="-1" aria-label="剪纸工具">
      <div class="tool-heading">
       <h2>剪纸工具</h2>
       <div class="history-tools"><button aria-label="撤销" :disabled="!canUndo||!editable" @click="undo">↶</button><button aria-label="重做" :disabled="!canRedo||!editable" @click="redo">↷</button></div>
@@ -230,14 +276,20 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <div class="color-choices">
        <button v-for="(c,i) in COLORS" :key="c" :style="{background:c}" :class="{selected:model.color===c}" :aria-label="colorNames[i]" :aria-pressed="model.color===c" @click="color(c)"><span v-if="model.color===c">✓</span></button>
       </div>
-      <button class="template-toggle" @click="showTemplates=!showTemplates" :aria-expanded="showTemplates">从一个起始纹样开始 <span aria-hidden="true">{{showTemplates?'−':'＋'}}</span></button>
-      <AsyncState v-if="showTemplates" :pending="patternsLoading" :error="patternsError" :empty="!patterns?.length" @retry="retryPatterns">
-       <div class="template-grid">
-        <button v-for="p in patterns" :key="p.id" @click="template(p)"><PaperArt :model="p.model" :label="p.name"/><span>{{p.name}}</span></button>
+      <button ref="templateControl" class="template-toggle" @click="showTemplates=!showTemplates" :aria-expanded="showTemplates" :aria-controls="showTemplates?'pattern-tray':undefined">从一个起始纹样开始 <span aria-hidden="true">{{showTemplates?'−':'＋'}}</span></button>
+      <Transition name="pattern-tray">
+       <div v-if="showTemplates" id="pattern-tray" class="pattern-tray">
+        <div class="pattern-tray-body">
+         <AsyncState :pending="patternsLoading" :error="patternsError" :empty="!patterns?.length" @retry="retryPatterns">
+          <div class="template-grid">
+           <button v-for="p in patterns" :key="p.id" @click="template(p)"><PaperArt :model="p.model" :label="p.name"/><span>{{p.name}}</span></button>
+          </div>
+         </AsyncState>
+        </div>
        </div>
-      </AsyncState>
+      </Transition>
      </fieldset>
-     <section id="save-tools" class="save-panel" aria-label="留存作品">
+     <section id="save-tools" class="save-panel" :class="{'studio-target':route.hash==='#save-tools'}" tabindex="-1" aria-label="留存作品">
       <p class="eyebrow">03 / 留存作品</p>
       <h2>把心意收好</h2>
       <label for="work-title">作品名称</label>

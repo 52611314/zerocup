@@ -27,6 +27,14 @@ const categories = ['花叶之间', '几何之美', '自由创作']
 const cover = { ...starterModels[6]!, color: '#952d22' }
 const coverTitle = patternNames[6]!
 const hasFilters = computed(() => Boolean(search.value || category.value))
+const catalogLayout = ref(!hasFilters.value && page.value === 1)
+const resultRevision = ref(0)
+
+watch(data, (result, previous) => {
+  if (!result) return
+  catalogLayout.value = !hasFilters.value && page.value === 1
+  if (previous) resultRevision.value++
+})
 
 function browse(nextCategory = category.value, nextPage = 1, text = query.value.trim()) {
   query.value = text
@@ -54,7 +62,9 @@ function turn(delta: number) {
         <h1>纸间<span>万象</span></h1>
         <p class="catalog-lead">一张纸，展开各自的心意。<br/>从花叶、几何与留白里，慢慢看。</p>
         <div class="catalog-actions">
-          <a class="catalog-enter" href="#gallery-collection">观看展品 <span aria-hidden="true">↓</span></a>
+          <NuxtLink class="catalog-enter" :to="{ path: route.path, query: route.query, hash: '#gallery-collection' }">
+            观看展品 <span aria-hidden="true">↓</span>
+          </NuxtLink>
           <NuxtLink class="catalog-create" to="/studio">剪一张，来参展 <span aria-hidden="true">↗</span></NuxtLink>
         </div>
       </div>
@@ -79,9 +89,14 @@ function turn(delta: number) {
           <span class="collection-index" lang="en" aria-hidden="true">THE COLLECTION</span>
           <h2 id="gallery-collection" tabindex="-1">展出作品</h2>
         </div>
-        <span class="collection-count" role="status">
-          {{ pending ? '正在查找作品…' : error ? '' : `共 ${data?.total ?? 0} 件作品` }}
-        </span>
+        <div class="collection-controls">
+          <span class="collection-count" role="status">
+            {{ pending ? '正在查找作品…' : error ? '' : `共 ${data?.total ?? 0} 件作品` }}
+          </span>
+          <button v-if="hasFilters" class="clear-filters" type="button" @click="browse('', 1, '')">
+            清除筛选 <span aria-hidden="true">×</span>
+          </button>
+        </div>
       </div>
       <BrowseFilters
         v-model="query"
@@ -96,27 +111,27 @@ function turn(delta: number) {
         @search="browse()"
       />
 
-      <div v-if="hasFilters" class="collection-status">
-        <button class="clear-filters" type="button" @click="browse('', 1, '')">
-          清除筛选 <span aria-hidden="true">×</span>
-        </button>
+      <div class="collection-results" :aria-busy="pending">
+        <AsyncState :pending="pending && !data" :error="error" :empty="!data?.items.length" @retry="refresh">
+          <div
+            :key="resultRevision"
+            class="works-grid exhibit-grid"
+            :class="{ 'catalog-grid': catalogLayout, 'exhibit-grid-fresh': resultRevision > 0 }"
+          >
+            <WorkCard
+              v-for="(work, index) in data?.items"
+              :key="work.id"
+              :work="work"
+              gallery-mount
+              :exhibit-number="String(((data?.page ?? 1) - 1) * 6 + index + 1).padStart(2, '0')"
+            />
+          </div>
+        </AsyncState>
       </div>
-
-      <AsyncState :pending="pending" :error="error" :empty="!data?.items.length" @retry="refresh">
-        <div class="works-grid exhibit-grid" :class="{ 'catalog-grid': !hasFilters && page === 1 }">
-          <WorkCard
-            v-for="(work, index) in data?.items"
-            :key="work.id"
-            :work="work"
-            gallery-mount
-            :exhibit-number="String((page - 1) * 6 + index + 1).padStart(2, '0')"
-          />
-        </div>
-      </AsyncState>
-      <nav v-if="!pending && !error && (page > 1 || (data?.pages ?? 1) > 1)" class="pagination" aria-label="展览翻页">
-        <button class="btn" :disabled="page <= 1" @click="turn(-1)">← 上一页</button>
-        <span>第 {{ page }} / {{ Math.max(1, data?.pages ?? 1) }} 页</span>
-        <button class="btn" :disabled="page >= (data?.pages ?? 1)" @click="turn(1)">下一页 →</button>
+      <nav v-if="!error && data && (data.page > 1 || data.pages > 1)" class="pagination" aria-label="展览翻页">
+        <button class="btn" :disabled="pending || data.page <= 1" @click="turn(-1)">← 上一页</button>
+        <span>第 {{ data.page }} / {{ Math.max(1, data.pages) }} 页</span>
+        <button class="btn" :disabled="pending || data.page >= data.pages" @click="turn(1)">下一页 →</button>
       </nav>
       <p class="gallery-note">标注“原创示例”的作品由项目制作，用于说明数字创作方式。访客作品审核后在此展出。</p>
     </section>
@@ -297,25 +312,28 @@ function turn(delta: number) {
 }
 
 .collection-index,
-.collection-count,
-.collection-status {
+.collection-count {
   color: #6c4d3f;
   font-size: 13px;
   letter-spacing: .12em;
 }
 
 .collection-index { font: 11px/1.2 Georgia, serif; letter-spacing: .19em; }
-.collection-count { padding-bottom: 4px; white-space: nowrap; }
+.collection-count { white-space: nowrap; }
 
-.collection-status {
+.collection-controls {
   display: flex;
-  justify-content: flex-end;
+  align-items: center;
+  justify-content: end;
+  min-height: 44px;
+  gap: 10px;
 }
 
 .clear-filters {
   border: 0;
   padding-inline: 8px;
   color: #8e261d;
+  font-size: 14px;
   text-decoration: underline;
   text-underline-offset: .2em;
 }
@@ -324,6 +342,29 @@ function turn(delta: number) {
   align-items: start;
   gap: clamp(18px, 3vw, 46px) clamp(13px, 2.2vw, 30px);
   margin-top: 26px;
+}
+
+.exhibit-grid :deep(.gallery-mount-card .work-mount::after) {
+  position: absolute;
+  z-index: -1;
+  inset: 0;
+  background: radial-gradient(ellipse at 50% 32%, #fffdf0 0%, #fff6e140 56%, transparent 80%);
+  opacity: 0;
+  pointer-events: none;
+  content: '';
+}
+
+.exhibit-grid :deep(.gallery-mount-card:is(:hover, :focus-visible) .work-mount::after) {
+  opacity: .68;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .exhibit-grid :deep(.gallery-mount-card .work-mount::after) { transition: opacity .36s ease; }
+  .exhibit-grid-fresh { animation: mount-exhibits .27s ease-out; }
+  @keyframes mount-exhibits {
+    from { opacity: .76; }
+    to { opacity: 1; }
+  }
 }
 
 @media (min-width: 901px) {
@@ -358,6 +399,7 @@ function turn(delta: number) {
   .wall-seal { inset: 16px 17px auto auto; width: 27px; font-size: 16px; }
   .wall-caption { inset: auto 17px 14px auto; font-size: 14px; }
   .collection-heading { margin-bottom: 12px; padding-top: 12px; }
+  .collection-controls { min-height: 66px; flex-direction: column; align-items: end; gap: 0; }
   .exhibit-grid { margin-top: 18px; }
 }
 

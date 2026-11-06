@@ -59,6 +59,7 @@ const sections = {
 } as const
 
 const tab = ref<keyof typeof sections>('works')
+const selectedIndex = computed(() => Object.keys(sections).indexOf(tab.value))
 const worksRequest = await useFetch<Draft[]>('/api/me/works', { server: false })
 const progressRequest = await useFetch<LessonProgress[]>('/api/me/progress', { server: false })
 const favoritesRequest = await useFetch<Favorite[]>('/api/me/favorites', { server: false })
@@ -95,7 +96,7 @@ const labels: Record<Draft['status'], string> = {
       </div>
     </header>
 
-    <div class="filter-tabs me-tabs" role="group" aria-label="纸笺分类">
+    <div class="filter-tabs me-tabs" role="group" aria-label="纸笺分类" :style="{ '--tab-offset': selectedIndex * 100 + '%' }">
       <button
         v-for="(section, key) in sections"
         :key="key"
@@ -111,52 +112,56 @@ const labels: Record<Draft['status'], string> = {
     </div>
 
     <section id="paper-collection" aria-labelledby="collection-title">
-      <div class="notebook-collection-heading">
-        <h2 id="collection-title">{{ activeSection.label }}</h2>
-        <p v-if="!loading && !error">{{ count }} {{ activeSection.unit }}</p>
-      </div>
-
-      <AsyncState :pending="loading" :error="error" @retry="activeRequest.refresh()">
-        <div v-if="!count" class="notebook-empty">
-          <div>
-            <h3>{{ activeSection.emptyTitle }}</h3>
-            <p>{{ activeSection.description }}</p>
+      <Transition name="notebook-sheet">
+        <div :key="tab" class="notebook-sheet">
+          <div class="notebook-collection-heading">
+            <h2 id="collection-title">{{ activeSection.label }}</h2>
+            <p v-if="!loading && !error">{{ count }} {{ activeSection.unit }}</p>
           </div>
-          <NuxtLink class="btn" :to="activeSection.to">{{ activeSection.action }} <span aria-hidden="true">↗</span></NuxtLink>
-        </div>
 
-        <div v-else-if="tab === 'works'" class="draft-grid">
-          <article v-for="(work, index) in works" :key="work.id" class="paper-draft">
-            <WorkCard :work="{ ...work, category: '' }" private-work :exhibit-number="String(index + 1).padStart(2, '0')" />
-            <div class="draft-state">
-              <span>{{ labels[work.status] }}</span>
-              <NuxtLink v-if="work.status === 'published'" :to="`/gallery/${work.id}`" class="text-link">看看展览 ↗</NuxtLink>
-              <small v-else>第 {{ work.version }} 版</small>
-            </div>
-            <p v-if="work.review_note" class="review-note"><strong>展馆留言</strong>{{ work.review_note }}</p>
-          </article>
-        </div>
-
-        <div v-else-if="tab === 'progress'" class="progress-list">
-          <article v-for="lesson in progress" :key="lesson.tutorial_id">
-            <div>
-              <p class="eyebrow">{{ lesson.step >= lesson.total ? '已经完成' : '正在练习' }}</p>
-              <h3>{{ lesson.title }}</h3>
-              <div class="notebook-progress">
-                <progress :value="lesson.step" :max="lesson.total" :aria-label="lesson.title + '完成进度'" />
-                <span aria-hidden="true">{{ lesson.step }} / {{ lesson.total }}</span>
+          <AsyncState :pending="loading" :error="error" @retry="activeRequest.refresh()">
+            <div v-if="!count" class="notebook-empty">
+              <div>
+                <h3>{{ activeSection.emptyTitle }}</h3>
+                <p>{{ activeSection.description }}</p>
               </div>
+              <NuxtLink class="btn" :to="activeSection.to">{{ activeSection.action }} <span aria-hidden="true">↗</span></NuxtLink>
             </div>
-            <NuxtLink class="text-link" :to="`/studio?tutorial=${lesson.slug}`">
-              {{ lesson.step >= lesson.total ? '再练一次' : '继续这段练习' }} <span aria-hidden="true">↗</span>
-            </NuxtLink>
-          </article>
-        </div>
 
-        <div v-else class="works-grid">
-          <WorkCard v-for="(work, index) in favorites" :key="work.id" :work="work" :exhibit-number="String(index + 1).padStart(2, '0')" />
+            <div v-else-if="tab === 'works'" class="draft-grid">
+              <article v-for="(work, index) in works" :key="work.id" class="paper-draft">
+                <WorkCard :work="{ ...work, category: '' }" private-work :exhibit-number="String(index + 1).padStart(2, '0')" />
+                <div class="draft-state">
+                  <span>{{ labels[work.status] }}</span>
+                  <NuxtLink v-if="work.status === 'published'" :to="`/gallery/${work.id}`" class="text-link">看看展览 ↗</NuxtLink>
+                  <small v-else>第 {{ work.version }} 版</small>
+                </div>
+                <p v-if="work.review_note" class="review-note"><strong>展馆留言</strong>{{ work.review_note }}</p>
+              </article>
+            </div>
+
+            <div v-else-if="tab === 'progress'" class="progress-list">
+              <article v-for="lesson in progress" :key="lesson.tutorial_id">
+                <div>
+                  <p class="eyebrow">{{ lesson.step >= lesson.total ? '已经完成' : '正在练习' }}</p>
+                  <h3>{{ lesson.title }}</h3>
+                  <div class="notebook-progress">
+                    <progress :value="lesson.step" :max="lesson.total" :aria-label="lesson.title + '完成进度'" />
+                    <span aria-hidden="true">{{ lesson.step }} / {{ lesson.total }}</span>
+                  </div>
+                </div>
+                <NuxtLink class="text-link" :to="`/studio?tutorial=${lesson.slug}`">
+                  {{ lesson.step >= lesson.total ? '再练一次' : '继续这段练习' }} <span aria-hidden="true">↗</span>
+                </NuxtLink>
+              </article>
+            </div>
+
+            <div v-else class="works-grid">
+              <WorkCard v-for="(work, index) in favorites" :key="work.id" :work="work" :exhibit-number="String(index + 1).padStart(2, '0')" />
+            </div>
+          </AsyncState>
         </div>
-      </AsyncState>
+      </Transition>
     </section>
 
     <p class="session-note">

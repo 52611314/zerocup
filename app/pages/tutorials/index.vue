@@ -46,12 +46,12 @@ const cover = { ...starterModels[2]!, color: '#e6aa73' }
                 <span class="lesson-number" aria-hidden="true">{{ String(index + 1).padStart(2, '0') }}</span>
                 <span class="lesson-step-count">{{ tutorial.steps.length }} 个小步骤</span>
               </div>
-              <div class="lesson-plate" aria-hidden="true">
-                <PaperArt
-                  :model="starterModels[index % starterModels.length]!"
-                  :folded="index === 0"
-                  :sectors="index === 1 ? 4 : 8"
-                />
+              <div
+                class="lesson-plate"
+                :class="{ 'lesson-plate-folded': index === 0, 'lesson-plate-half': index === 1 }"
+                aria-hidden="true"
+              >
+                <PaperArt :model="starterModels[index % starterModels.length]!" />
               </div>
               <div class="lesson-copy">
                 <h3>{{ tutorial.title }}</h3>
@@ -170,15 +170,41 @@ const cover = { ...starterModels[2]!, color: '#e6aa73' }
   width: min(55%, 182px);
   filter: drop-shadow(3px 5px 2px #5b31192e);
   rotate: -10deg;
-  transition: rotate .4s cubic-bezier(.22, .7, .25, 1);
 }
 
-.lesson-item:first-child .paper-art {
+.lesson-plate-folded .paper-art {
   translate: -16% -4%;
 }
 
-.lesson-card:is(:hover, :focus-visible) .paper-art {
-  rotate: 0deg;
+.lesson-plate-folded :deep(.paper-art > g:nth-of-type(n + 2) > .opening-leaf),
+.lesson-plate-half :deep(.paper-art > g:nth-of-type(n + 5) > .opening-leaf) {
+  opacity: var(--lesson-leaf-opacity, 0);
+  transform: scaleY(var(--lesson-leaf-scale, 0));
+  transform-origin: 0 0;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .lesson-plate .paper-art {
+    transition: rotate .32s ease-out, translate .32s ease-out;
+  }
+
+  .lesson-plate :deep(.opening-leaf) {
+    transition: opacity .18s ease-out, transform .32s cubic-bezier(.22, .7, .25, 1);
+  }
+
+  .lesson-card:is(:hover, :focus-visible) .paper-art {
+    rotate: 0deg;
+    translate: 0;
+  }
+
+  .lesson-card:is(:hover, :focus-visible) .lesson-plate {
+    --lesson-leaf-opacity: 1;
+    --lesson-leaf-scale: 1;
+  }
+
+  .lesson-card:is(:hover, :focus-visible) .lesson-plate :deep(.paper-art > g:nth-of-type(n + 5) > .opening-leaf) {
+    transition-delay: .09s;
+  }
 }
 
 .lesson-copy {
@@ -242,9 +268,4 @@ const cover = { ...starterModels[2]!, color: '#e6aa73' }
   }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .lesson-card:is(:hover, :focus-visible) .paper-art {
-    rotate: -10deg;
-  }
-}
 </style>

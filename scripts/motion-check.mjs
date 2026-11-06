@@ -68,5 +68,16 @@ try {
   assert.equal(await page.locator('.cut-off').count(),0)
   await page.getByRole('button',{name:'展开作品'}).click()
   assert.equal(await page.locator('.unfold-stage use').count(),8)
-  console.log('PASS: touch scraps, complete one-click fold demonstration, delayed navigation cuts, loader exit, matching cut fragment, eight sectors, reduced motion')
+  await page.emulateMedia({reducedMotion:'no-preference'})
+  await page.goto('/gallery')
+  await page.waitForLoadState('networkidle')
+  await page.getByRole('link',{name:'观看展品'}).click()
+  await page.waitForFunction(()=>document.activeElement?.id==='gallery-collection' &&
+    Math.abs(document.activeElement.getBoundingClientRect().top-24)<3)
+  const collectionY=await page.evaluate(()=>scrollY)
+  await page.getByRole('button',{name:'花叶之间'}).click()
+  await page.waitForFunction(()=>new URLSearchParams(location.search).get('category')==='花叶之间' &&
+    document.querySelector('.collection-results')?.getAttribute('aria-busy')==='false')
+  assert.ok(Math.abs(await page.evaluate(()=>scrollY)-collectionY)<35)
+  console.log('PASS: touch scraps, complete one-click fold demonstration, delayed navigation, eight sectors, reduced motion, and collection position after filtering')
 } finally { await browser.close() }
