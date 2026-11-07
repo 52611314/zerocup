@@ -25,6 +25,10 @@ function dismissMenu() {
   menu.value = false
   menuButton.value?.focus()
 }
+
+function closeCurrentMenu(event: MouseEvent, href: string) {
+  if (route.path === href && !event.metaKey && !event.ctrlKey && !event.shiftKey && !event.altKey) dismissMenu()
+}
 </script>
 
 <template>
@@ -32,19 +36,22 @@ function dismissMenu() {
   <NuxtRouteAnnouncer />
   <PaperNavigation/>
   <WindowFlight/>
+  <ChapterWindow/>
   <PaperWeather/>
   <a class="skip" href="#main">跳到主要内容</a>
-  <div class="header-frame" @keydown.esc="dismissMenu">
+  <div class="header-frame" :class="{ 'header-opening': route.path === '/' }" @keydown.esc="dismissMenu">
    <header class="site-header">
     <NuxtLink to="/" class="brand" aria-label="纸上生花首页">
      <img src="/favicon.svg" width="38" height="38" alt=""/>
      <span>纸上生花<small>中国剪纸 · 数字工坊</small></span>
     </NuxtLink>
     <button ref="menuButton" class="menu-toggle" type="button" @click="menu = !menu" :aria-expanded="menu" aria-controls="navigation">
-     {{ menu ? '收起导航' : '导航' }} <span aria-hidden="true">{{ menu ? '×' : '☰' }}</span>
+     导航 <span aria-hidden="true">{{ menu ? '×' : '☰' }}</span>
     </button>
     <nav id="navigation" :class="{ open: menu }" aria-label="主导航">
-     <NuxtLink v-for="{ href, label } in links" :key="href" :to="href" :class="{ active: currentSection === href }" :aria-current="currentSection === href ? 'page' : undefined" @click="dismissMenu">{{ label }}</NuxtLink>
+     <NuxtLink v-for="({ href, label }, index) in links" :key="href" :to="href" :class="{ active: currentSection === href }" :aria-current="currentSection === href ? 'page' : undefined" @click="closeCurrentMenu($event, href)">
+      <span class="nav-index" aria-hidden="true">0{{ index + 1 }}</span>{{ label }}
+     </NuxtLink>
     </nav>
     <NuxtLink to="/me" class="personal-link" @click="menu = false">我的纸笺 <span aria-hidden="true">↗</span></NuxtLink>
    </header>

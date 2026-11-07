@@ -29,9 +29,17 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
     <AsyncState :pending="pending" :error="error" @retry="refresh">
       <article v-if="article" class="article-layout" aria-labelledby="journal-title">
         <header class="journal-heading">
-          <p class="eyebrow">01 / 纸上札记 <span>· {{ article.category }}</span></p>
+          <p class="eyebrow"><span aria-hidden="true">01 /</span> 纸上札记 <span>· {{ article.category }}</span></p>
           <h1 id="journal-title">{{ article.title }}</h1>
           <p class="article-lead">{{ article.summary }}</p>
+          <NuxtLink
+            v-if="article.sources.length"
+            class="journal-sources-link"
+            :to="{ path: route.path, query: route.query, hash: '#journal-sources' }"
+          >
+            查看资料来源 <span aria-hidden="true">↓</span>
+          </NuxtLink>
+          <span class="journal-heading-stamp" aria-hidden="true">纸上札记</span>
         </header>
         <nav v-if="article.body.length" class="article-toc" aria-label="札记目录">
           <span class="eyebrow">本页目录</span>
@@ -62,7 +70,7 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
               <p>{{ section.text }}</p>
             </div>
           </section>
-          <section v-if="article.sources.length" class="sources">
+          <section v-if="article.sources.length" id="journal-sources" class="sources" tabindex="-1">
             <h2>循着来源，继续读</h2>
             <p>正文由项目整理。文化事实参考以下资料。</p>
             <ul>
@@ -104,15 +112,60 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
 }
 
 .journal-heading {
+  position: relative;
   grid-column: 1 / -1;
-  padding: clamp(22px, 4vw, 52px) 0 clamp(24px, 4vw, 46px);
-  border-block: 1px solid var(--line);
+  min-width: 0;
+  padding: clamp(22px, 4.2vw, 54px) clamp(54px, 10vw, 142px) clamp(24px, 4vw, 46px) clamp(20px, 4vw, 48px);
+  border: 1px solid #ad9b78;
+  border-top: 4px solid #535a46;
+  background:
+    repeating-linear-gradient(103deg, transparent 0 7px, #614d3208 7px 8px),
+    linear-gradient(90deg, #b7945e26, transparent 12%),
+    #fbf2df;
+  box-shadow: 0 10px 16px -12px #54371b65;
 }
 
-.journal-heading .eyebrow { margin: 0; font-weight: 700; }
+.journal-heading::after {
+  position: absolute;
+  inset: 0 clamp(39px, 7vw, 99px) 0 auto;
+  border-right: 1px solid #ad9b7870;
+  pointer-events: none;
+  content: '';
+}
+
+.journal-heading .eyebrow { margin: 0; color: #8f3025; font-weight: 700; }
 .journal-heading .eyebrow span { color: var(--muted); }
-.journal-heading h1 { font-size: clamp(34px, 5.4vw, 76px); overflow-wrap: anywhere; }
+.journal-heading h1 {
+  margin: .3em 0 .28em;
+  font-size: clamp(34px, 5.4vw, 76px);
+  letter-spacing: -.045em;
+  text-wrap: balance;
+  overflow-wrap: anywhere;
+}
 .journal-heading .article-lead { max-width: 38em; margin: 0; font-size: clamp(16px, 1.55vw, 21px); }
+
+.journal-heading-stamp {
+  position: absolute;
+  inset: clamp(22px, 4.2vw, 54px) clamp(11px, 2.7vw, 40px) auto auto;
+  border: 1px solid #b87a62;
+  padding: 6px 3px;
+  color: #8f3025;
+  font: 700 clamp(12px, 1.3vw, 18px)/1.1 var(--serif);
+  letter-spacing: .14em;
+  writing-mode: vertical-rl;
+}
+
+.journal-sources-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 44px;
+  margin-top: 8px;
+  color: #8f3025;
+  font-size: 14px;
+}
+
+.journal-sources-link:hover { text-decoration: underline; text-underline-offset: .25em; }
 .article-main { grid-column: 2; min-width: 0; }
 
 .article-toc {
@@ -169,7 +222,7 @@ usePageMeta(() => article.value?.title || '纸上札记', () => article.value?.s
 .article-section h2, .sources h2, .article-cta h2 { margin: 0 0 .45em; font-size: clamp(23px, 3.1vw, 37px); }
 .article-section p { max-width: 48em; margin: 0; line-height: 1.9; overflow-wrap: anywhere; }
 .sources, .article-cta { margin: 22px 0 0; padding: clamp(18px, 3vw, 30px); }
-.sources { border: 1px solid var(--line); background: transparent; }
+.sources { border: 1px solid var(--line); border-left: 3px solid #535a46; background: #fbf2df; scroll-margin-top: 22px; }
 .sources p { color: var(--muted); margin: 0 0 8px; }
 .sources ul { margin: 0; padding-left: 1.15em; }
 .sources a { display: inline-block; margin: 4px 0; overflow-wrap: anywhere; text-underline-offset: .2em; }

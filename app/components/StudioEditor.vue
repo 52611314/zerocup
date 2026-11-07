@@ -1,13 +1,22 @@
 <script setup lang="ts">
-import {blankModel,cloneModel,ModelHistory,COLORS,cutPath,SECTOR_PATH,clampPosition,svgMarkup,type Cut,type CutType,type PaperModel} from '../../shared/model'
+import {blankModel,cloneModel,ModelHistory,COLORS,cutPath,SECTOR_PATH,clampPosition,svgMarkup,sectorTransform,type Cut,type CutType,type PaperModel} from '../../shared/model'
+import { FIRST_CUT_IMPRINT } from '../../shared/patterns'
 const route=useRoute(),{feedback}=useFeedback()
+const windowArrival = useState('paper-window-arrival-path', () => '')
+const matArrival = ref(false)
+const creaseGuides = 'M -3 0 L 104 0 M 0 0 L 74 74'
 let history=new ModelHistory(blankModel()),model=ref<PaperModel>(blankModel()),revision=ref(0)
 const selected=ref<string|null>(null),tool=ref<CutType>('drop'),title=ref('我的第一朵窗花'),description=ref('')
 const id=ref<string|null>(null),version=ref(1),status=ref('draft'),savedSnapshot=ref(''),saving=ref(false),submitting=ref(false),saveError=ref(''),loading=ref(true),loadError=ref('')
 const showTemplates=ref(false),showHelp=ref(false),unfolded=ref(false),unfolding=ref(false),sectors=ref(1),hasUnfolded=ref(false)
+const visibleSectors=computed(()=>unfolded.value?sectors.value:1)
 const chosen=computed(()=>model.value.cuts.find(c=>c.id===selected.value))
 const editable=computed(()=>['draft','rejected'].includes(status.value)&&!restartRequested.value)
-const firstCutPosition={x:56,y:22}
+const toolImprint = computed<Cut>(() => ({
+ id: 'guide', type: tool.value, ...FIRST_CUT_IMPRINT,
+ aspect: tool.value === 'drop' ? FIRST_CUT_IMPRINT.aspect : 1
+}))
+const hoverPosition = shallowRef<{x: number; y: number} | null>(null)
 const pickedTemplate=ref(false)
 const guideStep=computed(()=>{
  if(!editable.value||id.value||route.query.draft||route.query.pattern||route.query.remix||route.query.tutorial||pickedTemplate.value||unfolding.value)return
@@ -45,11 +54,12 @@ function commit(next:PaperModel){history.commit(next);model.value=cloneModel(his
 function undo(){model.value=history.undo();revision.value++;selected.value=null;hasUnfolded.value=false}
 function redo(){model.value=history.redo();revision.value++;selected.value=null;hasUnfolded.value=false}
 const fallingCut = ref<Cut|null>(null)
-function add(position=firstCutPosition) {
+function add(position: { x: number; y: number } = FIRST_CUT_IMPRINT) {
  if(!editable.value)return
  if(model.value.cuts.length>=80){feedback('这张纸最多放置 80 个切口。','error');return}
- const c:Cut={id:crypto.randomUUID(),type:tool.value,...clampPosition(position.x,position.y),size:8,aspect:tool.value==='drop'?.55:1,angle:23}
+ const c:Cut={...toolImprint.value,id:crypto.randomUUID(),...clampPosition(position.x,position.y)}
  const next=cloneModel(model.value);next.cuts.push(c);commit(next);selected.value=c.id;fallingCut.value=matchMedia('(prefers-reduced-motion: reduce)').matches?null:c
+ hoverPosition.value = null
 }
 function patch(field:'size'|'aspect'|'angle',value:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;c[field]=value;commit(next)}
 function move(dx:number,dy:number){if(!chosen.value)return;const next=cloneModel(model.value),c=next.cuts.find(c=>c.id===selected.value)!;Object.assign(c,clampPosition(c.x+dx,c.y+dy));commit(next)}
@@ -73,25 +83,58 @@ function template(p:any) {
  feedback(`已铺开「${p.name}」的起始纹样。`)
 }
 const board=ref<SVGSVGElement>(),drag=ref<{id:string;original:PaperModel;moved:boolean;pointer:number}|null>(null)
+const unfoldStage=ref<HTMLElement>()
+const unfoldControl=ref<HTMLButtonElement>()
 function eventPosition(e:PointerEvent){const svg=board.value!;const point=new DOMPoint(e.clientX,e.clientY).matrixTransform(svg.getScreenCTM()!.inverse());return clampPosition(point.x,point.y)}
 function pointerDown(e:PointerEvent,cutId?:string) {
  if(!editable.value||unfolded.value||e.button!==0)return
  if(!cutId){if((e.target as Element).closest('[data-paper]'))add(eventPosition(e));return}
  selected.value=cutId;drag.value={id:cutId,original:cloneModel(model.value),moved:false,pointer:e.pointerId};board.value?.setPointerCapture(e.pointerId)
 }
-function pointerMove(e:PointerEvent){if(!drag.value)return;const c=model.value.cuts.find(c=>c.id===drag.value!.id)!;const p=eventPosition(e);if(Math.abs(c.x-p.x)+Math.abs(c.y-p.y)<.4)return;Object.assign(c,p);drag.value.moved=true}
+function pointerMove(e:PointerEvent){
+ if(!drag.value){
+  const overPaper = e.pointerType === 'mouse' && !e.buttons && (e.target as Element).closest('[data-paper]')
+  hoverPosition.value = overPaper && editable.value && model.value.cuts.length < 80 ? eventPosition(e) : null
+  return
+ }
+ const c=model.value.cuts.find(c=>c.id===drag.value!.id)!
+ const p=eventPosition(e)
+ if(Math.abs(c.x-p.x)+Math.abs(c.y-p.y)<.4)return
+ Object.assign(c,p)
+ drag.value.moved=true
+}
 function pointerEnd(cancel=false){if(!drag.value)return;const d=drag.value;drag.value=null;if(cancel)model.value=cloneModel(d.original);else if(d.moved){const next=cloneModel(model.value);model.value=cloneModel(d.original);commit(next)} }
 let animationGeneration=0
-function unfold(){const token=++animationGeneration;unfolded.value=true;hasUnfolded.value=true
+let paperHandoff:Animation|undefined
+async function unfold(){
+ const token=++animationGeneration
+ const foldedMatrix=board.value?.getScreenCTM()
+ hoverPosition.value = null
+ fallingCut.value = null
+ unfolded.value=true;hasUnfolded.value=true
  if(matchMedia('(prefers-reduced-motion: reduce)').matches){sectors.value=8;unfolding.value=false;return}
  sectors.value=1;unfolding.value=true
- for(const [n,ms] of [[2,100],[4,370],[8,720]] as const)setTimeout(()=>{if(token!==animationGeneration)return;sectors.value=n;if(n===8)setTimeout(()=>{if(token===animationGeneration)unfolding.value=false},240)},ms)
+ await nextTick()
+ if(token!==animationGeneration)return
+ const preview=unfoldStage.value?.querySelector('svg')
+ const previewMatrix=preview?.getScreenCTM()
+ if(preview&&foldedMatrix&&previewMatrix?.a){
+  // Match the edit wedge's pivot and scale before moving it to the center of the mat.
+  const x=foldedMatrix.e-previewMatrix.e,y=foldedMatrix.f-previewMatrix.f
+  const scale=foldedMatrix.a/previewMatrix.a
+  paperHandoff=preview.animate(
+   [{transform:`translate(${x}px, ${y}px) scale(${scale})`},{transform:'none'}],
+   {duration:180,easing:'cubic-bezier(.3, 0, .25, 1)'},
+  )
+ }
+ for(const [n,ms] of [[2,180],[4,400],[8,720]] as const)setTimeout(()=>{if(token!==animationGeneration)return;sectors.value=n;if(n===8)setTimeout(()=>{if(token===animationGeneration)unfolding.value=false},240)},ms)
 }
-function skip(){animationGeneration++;sectors.value=8;unfolding.value=false}
+function skip(){animationGeneration++;paperHandoff?.cancel();paperHandoff=undefined;sectors.value=8;unfolding.value=false}
 function fold(){skip();unfolded.value=false}
 let motionPreference:MediaQueryList|undefined
 function motionChanged(event:MediaQueryListEvent) {
  if(!event.matches)return
+ matArrival.value = false
  fallingCut.value=null
  canvasRegister.value?.getAnimations().forEach(animation=>animation.cancel())
  if(unfolding.value)skip()
@@ -163,6 +206,7 @@ onMounted(async()=>{
  window.addEventListener('keydown',keyboard)
  motionPreference=matchMedia('(prefers-reduced-motion: reduce)')
  motionPreference.addEventListener('change',motionChanged)
+ matArrival.value = windowArrival.value === '/studio' && route.fullPath === '/studio' && !motionPreference.matches
  await load()
  await nextTick()
  const hash=location.hash
@@ -172,6 +216,7 @@ onMounted(async()=>{
 })
 onBeforeUnmount(()=>{
  animationGeneration++
+ paperHandoff?.cancel()
  motionPreference?.removeEventListener('change',motionChanged)
  window.removeEventListener('beforeunload',beforeUnload)
  window.removeEventListener('keydown',keyboard)
@@ -182,9 +227,9 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
  <AsyncState :pending="loading" :error="loadError" @retry="load">
   <header class="studio-heading">
    <div>
-    <p class="eyebrow">02 / 指尖工坊 · PAPER WORKSHOP</p>
-    <h1>一折一剪，都是<span>新意。</span></h1>
-    <p class="studio-lead">在八分之一的纸面上落刀，看一处留白如何绕成一朵花。</p>
+    <p class="eyebrow">02 / 指尖工坊 · 窗前纸桌</p>
+    <h1>窗前，<span>落一刀。</span></h1>
+    <p class="studio-lead">一角红纸，八重留白。</p>
    </div>
    <div class="studio-header-actions">
     <NuxtLink class="text-link" to="/me">我的纸笺 ↗</NuxtLink>
@@ -208,38 +253,56 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
    </nav>
    <div class="studio-layout">
     <section class="studio-canvas-area" aria-label="创作纸面">
-     <div class="canvas-top">
-      <div class="canvas-mode"><span class="red-dot"/><span>{{unfolded?'展开预览':'折叠纸面'}}</span></div>
+     <div class="canvas-top" :class="{'canvas-first-cut':guideStep==='cut'}">
+      <button v-if="guideStep==='cut'" class="btn primary first-cut-action" type="button" @click="add();unfoldControl?.focus({preventScroll:$event.detail>0})">剪下第一刀 <span aria-hidden="true">✦</span></button>
+      <div v-else class="canvas-mode"><span class="red-dot"/><span>{{unfolding?'正在展开':unfolded?'展开预览':'折叠纸面'}}</span></div>
+      <div class="sector-readout" aria-hidden="true">
+       <svg viewBox="-108 -108 216 216" class="sector-dial">
+        <path v-for="sector in 8" :key="sector" :d="SECTOR_PATH" :transform="sectorTransform(sector-1)" :class="{open:sector<=visibleSectors}"/>
+       </svg>
+       <span>{{visibleSectors*45}}° · {{visibleSectors}}/8</span>
+      </div>
       <span class="cut-count">{{model.cuts.length}} / 80 个切口</span>
      </div>
      <div class="canvas-surface" :class="{expanded:unfolded}">
+      <div v-if="matArrival" class="mat-arrival" aria-hidden="true" @animationend="matArrival = false"/>
       <div ref="canvasRegister" class="surface-register" aria-hidden="true"><i/><i/><i/><i/></div>
-      <div class="surface-meta" aria-hidden="true">{{unfolded?'展开纸面':'基础扇区'}}<span>{{unfolded?`${sectors*45}° · ${sectors}/8`:'45° · 1/8'}}</span></div>
       <Transition name="studio-paper">
-      <div v-if="unfolded" class="unfold-stage" :class="{unfolding}">
+      <div v-if="unfolded" ref="unfoldStage" class="unfold-stage" :class="{unfolding}">
        <PaperArt :model="model" :sectors="sectors" :label="title+'的真实展开图案'"/>
-       <span v-if="unfolding" class="unfold-caption">一折，一折，花开了。</span>
       </div>
-      <svg v-else ref="board" class="editing-board" viewBox="-12 -22 126 126" role="img"
+      <svg v-else ref="board" class="editing-board" viewBox="-15 -18 126 113" role="img"
        aria-label="基础扇区编辑纸面。选择形状后点击放置，或使用添加按钮。"
-       @pointerdown="pointerDown($event)" @pointermove="pointerMove" @pointerup="pointerEnd()" @pointercancel="pointerEnd(true)">
+       @pointerdown="pointerDown($event)" @pointermove="pointerMove" @pointerleave="hoverPosition=null" @pointerup="pointerEnd()" @pointercancel="pointerEnd(true)">
        <defs>
         <clipPath id="edit-sector"><path :d="SECTOR_PATH"/></clipPath>
         <mask id="edit-mask" maskUnits="userSpaceOnUse" x="-5" y="-5" width="110" height="110">
          <path :d="SECTOR_PATH" fill="white"/>
          <path v-for="c in model.cuts" :key="c.id" :d="cutPath(c)" :transform="`translate(${c.x} ${c.y}) rotate(${c.angle})`" fill="black"/>
         </mask>
+        <linearGradient id="edit-paper-graze" x1="0" y1="0" x2="1" y2="1">
+         <stop stop-color="#ffcd8b" stop-opacity=".32"/>
+         <stop offset=".52" stop-color="#ffcd8b" stop-opacity=".08"/>
+         <stop offset="1" stop-color="#2a0e0e" stop-opacity=".15"/>
+        </linearGradient>
        </defs>
        <path class="sector-paper" :d="SECTOR_PATH" :fill="model.color" mask="url(#edit-mask)"/>
+       <path :d="SECTOR_PATH" fill="url(#edit-paper-graze)" mask="url(#edit-mask)" pointer-events="none" aria-hidden="true"/>
        <path data-paper :d="SECTOR_PATH" fill="transparent" stroke="#b28a48" stroke-width=".3"/>
-       <path d="M -3 0 L 104 0 M 0 0 L 74 74" stroke="#b28a48" stroke-width=".35" stroke-dasharray="1 1.4" fill="none" pointer-events="none"/>
-       <g v-if="guideStep==='cut'" class="first-cut-mark" :transform="`translate(${firstCutPosition.x} ${firstCutPosition.y})`" aria-hidden="true">
-        <circle r="7" vector-effect="non-scaling-stroke"/>
-        <path d="M -2.5 0 H 2.5 M 0 -2.5 V 2.5" vector-effect="non-scaling-stroke"/>
-       </g>
+       <path :d="creaseGuides" stroke="#b28a48" stroke-width=".35" stroke-dasharray="1 1.4" fill="none" pointer-events="none"/>
+       <path v-if="matArrival" :d="creaseGuides" class="mat-arrival-crease" pathLength="1" vector-effect="non-scaling-stroke" aria-hidden="true"/>
        <g clip-path="url(#edit-sector)">
+        <g v-if="guideStep==='cut'" class="first-cut-mark" :class="{'first-cut-inactive':hoverPosition}" :transform="`translate(${FIRST_CUT_IMPRINT.x} ${FIRST_CUT_IMPRINT.y})`" aria-hidden="true">
+         <path d="M -12 -8 V -12 H -8 M 8 -12 H 12 V -8 M 12 8 V 12 H 8 M -8 12 H -12 V 8" vector-effect="non-scaling-stroke"/>
+         <path :d="cutPath(toolImprint)" :transform="`rotate(${toolImprint.angle})`" class="cut-stencil" vector-effect="non-scaling-stroke"/>
+        </g>
+        <path v-if="hoverPosition" class="cut-stencil hover-stencil" :d="cutPath(toolImprint)"
+         :transform="`translate(${hoverPosition.x} ${hoverPosition.y}) rotate(${toolImprint.angle})`"
+         vector-effect="non-scaling-stroke" aria-hidden="true"/>
         <path v-for="c in model.cuts" :key="c.id" :d="cutPath(c)" :transform="`translate(${c.x} ${c.y}) rotate(${c.angle})`" fill="transparent"
          :stroke="selected===c.id?'#24201D':'#B28A48'" :stroke-width="selected===c.id?'.8':'.35'" class="cut-handle" @pointerdown.stop="pointerDown($event,c.id)"/>
+        <path v-if="fallingCut" :key="'imprint-'+fallingCut.id" class="cut-imprint" :d="cutPath(fallingCut)"
+         :transform="`translate(${fallingCut.x} ${fallingCut.y}) rotate(${fallingCut.angle})`" vector-effect="non-scaling-stroke" aria-hidden="true"/>
        </g>
        <g v-if="fallingCut" :key="fallingCut.id" :transform="`translate(${fallingCut.x} ${fallingCut.y}) rotate(${fallingCut.angle})`" pointer-events="none" aria-hidden="true">
         <path class="cut-off" :d="cutPath(fallingCut)" :fill="model.color" @animationend="fallingCut=null"/>
@@ -249,13 +312,20 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
        <text x="72" y="83" class="board-label">1/8 纸面</text>
       </svg>
       </Transition>
-      <div class="canvas-watermark" aria-hidden="true">纸上生花<span>留白 · 对称 · 展开</span></div>
+      <figure v-if="!unfolded" class="canvas-proof" :class="{ 'proof-empty': !model.cuts.length }">
+       <div class="proof-mount">
+        <PaperArt :model="model" label="当前纸面完整展开的实时成样"/>
+        <span v-if="fallingCut" :key="fallingCut.id" class="proof-glint" aria-hidden="true"/>
+       </div>
+       <figcaption>实时成样 <span aria-hidden="true">8/8</span></figcaption>
+      </figure>
+      <div v-else class="canvas-watermark" aria-hidden="true"><span>指尖工坊</span>纸上生花</div>
      </div>
      <div id="unfold-tools" class="canvas-bottom" :class="{'guide-save-ready':guideStep==='save','studio-target':route.hash==='#unfold-tools'}" tabindex="-1" role="group" aria-label="展开作品操作">
       <LessonPrompt v-if="tutorial&&!restartRequested" :current="activeStep" :step="step" :total="tutorial.steps.length" area="unfold" :target="lessonTarget" :ready="requirementMet" :busy="progressBusy" :error="progressError" @next="nextStep"/>
 
       <p aria-live="polite">
-       <template v-if="guideStep==='cut'"><strong>落下第一刀</strong><span class="guide-detail">点红纸上的标记，剪一个{{cutNames[tool]}}。</span></template>
+       <template v-if="guideStep==='cut'"><strong>落下第一刀</strong><span class="guide-detail">点红纸放置{{cutNames[tool]}}，再展开看看。</span></template>
        <template v-else-if="guideStep==='unfold'"><strong>展开看看</strong><span class="guide-detail">一个切口，会在八个方向成花。</span></template>
        <template v-else-if="guideStep==='save'"><strong>给这朵花起个名字</strong></template>
        <template v-else-if="unfolded">同一个切口，在八个方向照面。</template>
@@ -263,8 +333,8 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
        <template v-else>展开查看完整图案。</template>
       </p>
       <div class="canvas-actions">
-       <button v-if="unfolding" class="btn" @click="skip">跳过动效</button>
-       <button class="btn" :class="{primary:!unfolded&&guideStep!=='cut'}" @click="unfolded?fold():unfold()">
+       <button v-if="unfolding" class="btn" @click="skip();unfoldControl?.focus({preventScroll:true})">跳过动效</button>
+       <button ref="unfoldControl" class="btn" :class="{primary:!unfolded&&guideStep!=='cut'}" @click="unfolded?fold():unfold()">
         <template v-if="unfolded">← 回到折叠纸面</template>
         <template v-else>展开作品 <span aria-hidden="true">✳</span></template>
        </button>

@@ -152,8 +152,9 @@ defineProps<{
 }
 
 .gallery-mount-card {
-  --mount-center: #fff6e4;
-  --mount-edge: #e2ceb0;
+  --mount-center: #fff8e9;
+  --mount-edge: #ddc6a7;
+  --mount-turn: -6deg;
   display: flex;
   min-width: 0;
   flex-direction: column;
@@ -162,36 +163,49 @@ defineProps<{
 }
 
 .gallery-mount-card:nth-child(3n + 2) {
-  --mount-center: #f8e7db;
-  --mount-edge: #dec0ab;
+  --mount-center: #fcf4df;
+  --mount-edge: #d1ceb3;
+  --mount-turn: 5deg;
 }
 
 .gallery-mount-card:nth-child(3n) {
-  --mount-center: #faf1dc;
-  --mount-edge: #d8c8a9;
+  --mount-center: #fff0df;
+  --mount-edge: #dfbca4;
+  --mount-turn: -3deg;
 }
 
 .work-card.gallery-mount-card .work-mount {
   isolation: isolate;
   aspect-ratio: var(--gallery-mount-ratio, 1.28);
-  border: 1px solid #ad8d6c;
+  border: 1px solid var(--mount-border, #ad8d6c);
   background:
-    repeating-linear-gradient(119deg, transparent 0 5px, #6c402908 6px, transparent 7px),
-    radial-gradient(ellipse at 48% 42%, var(--mount-center), var(--mount-edge));
+    repeating-linear-gradient(119deg, transparent 0 5px, #9c795019 6px, transparent 7px),
+    radial-gradient(ellipse at 42% 32%, var(--mount-center), var(--mount-edge));
 }
 
 .gallery-mount-card .work-mount::before {
   position: absolute;
   z-index: -1;
   inset: clamp(8px, 1.5vw, 18px);
-  border: 1px solid #90684757;
+  border: 1px solid var(--mount-frame, #90684757);
+  content: '';
+}
+
+.gallery-mount-card .work-mount::after {
+  position: absolute;
+  z-index: -1;
+  width: min(58%, 406px);
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: var(--mount-aperture, transparent);
+  box-shadow: var(--mount-aperture-shadow, none);
   content: '';
 }
 
 .gallery-mount-card .paper-art {
   width: min(var(--gallery-art-width, 71%), var(--gallery-art-max, 300px));
   max-height: 88%;
-  transform: rotate(-6deg);
+  transform: rotate(var(--mount-turn));
   filter: drop-shadow(3px 6px 4px #50251730);
   transition: transform .38s cubic-bezier(.22, .7, .25, 1);
 }
@@ -269,7 +283,7 @@ defineProps<{
   }
 
   .gallery-mount-card:is(:hover, :focus-visible) .paper-art {
-    transform: rotate(-6deg);
+    transform: rotate(var(--mount-turn));
   }
 }
 </style>

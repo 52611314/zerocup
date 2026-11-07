@@ -46,10 +46,6 @@
 }
 :where(button, .btn):not(:disabled, [aria-disabled="true"]):active { translate: 0 1px; }
 .site-header nav a,.personal-link { transition: border-color .17s ease, color .17s ease, background-color .17s ease; }
-@media(max-width:800px) {
-  .site-header nav.open { animation: menu-settle .17s ease-out both; }
-}
-@keyframes menu-settle { from { opacity: .55; transform: translateY(-3px); } }
 .paper-scraps { position: absolute; inset: 0; pointer-events: none; overflow: hidden; z-index: 1; }
 .paper-scrap,.loading-chip { position: absolute; height: 5px; background: #ae3729; clip-path: polygon(0 0,100% 35%,22% 100%); }
 .loading-chip { width: 5px; height: 3px; animation: chip-fall .6s ease-out both; }

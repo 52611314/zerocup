@@ -68,6 +68,8 @@ const favoritesRequest = await useFetch<Favorite[]>('/api/me/favorites', { serve
 const { data: works } = worksRequest
 const { data: progress } = progressRequest
 const { data: favorites } = favoritesRequest
+// The API orders the current visitor's works by the most recent update.
+const resumeWork = computed(() => works.value?.find(work => work.status === 'draft' || work.status === 'rejected'))
 const requests = { works: worksRequest, progress: progressRequest, favorites: favoritesRequest }
 const activeSection = computed(() => sections[tab.value])
 const activeRequest = computed(() => requests[tab.value])
@@ -86,14 +88,23 @@ const labels: Record<Draft['status'], string> = {
   <div class="wrap page paper-notebook">
     <Breadcrumbs :items="[{ label: '我的纸笺' }]" />
 
-    <header class="page-heading notebook-heading">
+    <header class="page-heading notebook-heading" :class="{ 'notebook-has-draft': resumeWork }">
       <div>
         <p class="eyebrow">我的纸笺 <span aria-hidden="true">/</span> <span lang="en">PAPER NOTES</span></p>
         <h1>心意，妥帖<span>收好。</span></h1>
         <p class="notebook-intro">存下剪纸、练习和喜欢的纹样，随时翻回这一页。</p>
-        <NuxtLink class="btn primary" to="/studio">铺开一张新纸 <span aria-hidden="true">↗</span></NuxtLink>
+        <div class="notebook-actions">
+          <NuxtLink v-if="resumeWork" class="btn primary notebook-resume" :to="{ path: '/studio', query: { draft: resumeWork.id } }">
+            继续上次创作 <span aria-hidden="true">↗</span>
+          </NuxtLink>
+          <NuxtLink class="btn notebook-new" :class="{ primary: !resumeWork }" to="/studio">
+            铺开一张新纸 <span aria-hidden="true">↗</span>
+          </NuxtLink>
+        </div>
+        <p v-if="resumeWork" class="resume-title">上次编辑 · {{ resumeWork.title }}</p>
       </div>
       <div class="notebook-letter" aria-hidden="true">
+        <div v-if="resumeWork" class="letter-draft"><PaperArt :model="resumeWork.model" /></div>
         <span class="letter-face"><span>笺</span></span>
       </div>
     </header>

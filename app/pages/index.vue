@@ -1,12 +1,17 @@
 <script setup lang="ts">
 import { starterModels } from '../../shared/patterns'
 
-usePageMeta('花里有燕','在一张红纸里读出花和燕子，穿过剪纸窗，走进纸上生花的学堂、工坊与展览。')
-const { data: articles, pending, error, refresh } = await useFetch<any[]>('/api/articles')
-const { data: gallery } = await useFetch<any>('/api/gallery')
+usePageMeta('一纸开天地','从红纸的留白看见双燕与远山，穿过剪纸窗，走进纸上生花的学堂、工坊与展览。')
+const [{ data: articles, pending, error, refresh }, { data: gallery }] = await Promise.all([
+  useFetch<any[]>('/api/articles'),
+  useFetch<any>('/api/gallery')
+])
 
 const exhibit = starterModels[0]!
 const reversed = ref(false)
+const openingSeen = useState('swallow-opening-seen', () => false)
+const playOpening = ref(!openingSeen.value)
+const opening = ref<HTMLElement>()
 const sectors = ref(8)
 const unfolding = ref(false)
 const foldTarget = ref(0)
@@ -18,6 +23,26 @@ const foldInterval = 190
 const unfoldInterval = 240
 let preference: MediaQueryList | undefined
 let timers: ReturnType<typeof setTimeout>[] = []
+let openingFrame = 0
+let openingTravel = -1
+
+function toggleReading() {
+  playOpening.value = false
+  reversed.value = !reversed.value
+}
+
+function moveOpening() {
+  if (reducedMotion.value || openingFrame) return
+  openingFrame = requestAnimationFrame(() => {
+    openingFrame = 0
+    if (!opening.value) return
+    const { top, height } = opening.value.getBoundingClientRect()
+    const travel = Math.round(Math.max(0, Math.min(1, -top / Math.max(height * .8, 1))) * 1000) / 1000
+    if (travel === openingTravel) return
+    openingTravel = travel
+    opening.value.style.setProperty('--paper-travel', String(travel))
+  })
+}
 
 function finishDemo() {
   timers.forEach(timer => clearTimeout(timer))
@@ -30,6 +55,12 @@ function finishDemo() {
 
 function syncMotion() {
   reducedMotion.value = preference?.matches ?? false
+  if (reducedMotion.value) {
+    cancelAnimationFrame(openingFrame)
+    openingFrame = 0
+    openingTravel = 0
+    opening.value?.style.setProperty('--paper-travel', '0')
+  } else moveOpening()
   if (playing.value) announcement.value = '已显示完整窗花'
   finishDemo()
 }
@@ -63,34 +94,45 @@ function demonstrate() {
 }
 
 onMounted(() => {
+  openingSeen.value = true
   preference = matchMedia('(prefers-reduced-motion: reduce)')
   syncMotion()
   preference.addEventListener('change', syncMotion)
+  window.addEventListener('scroll', moveOpening, { passive: true })
+  window.addEventListener('resize', moveOpening)
 })
 onBeforeUnmount(() => {
   finishDemo()
   preference?.removeEventListener('change', syncMotion)
+  window.removeEventListener('scroll', moveOpening)
+  window.removeEventListener('resize', moveOpening)
+  cancelAnimationFrame(openingFrame)
 })
 </script>
 
 <template>
  <div class="home-page">
- <section class="opening" aria-labelledby="opening-title">
+ <section ref="opening" class="opening" :class="{ 'opening-awake': playOpening }" aria-labelledby="opening-title">
+  <OpeningLandscape/>
+  <div class="opening-light" aria-hidden="true"/>
   <div class="wrap opening-grid">
    <div class="opening-copy">
-    <p class="opening-kicker"><span aria-hidden="true">◇</span> 纸上生花 <span class="opening-divider" aria-hidden="true"/> 开场剪纸</p>
-    <h1 id="opening-title">花里<span>有燕。</span></h1>
-    <p class="hero-description">红纸剪成一朵花，<br/>花瓣的留白里，藏着两只燕子。</p>
+    <p class="opening-kicker"><span aria-hidden="true">◇</span> 纸上生花 <span class="opening-divider" aria-hidden="true"/> 剪纸序章</p>
+    <h1 id="opening-title">一纸<span>开天地。</span></h1>
+    <p class="hero-description">光穿过剪口，花里有燕。<br/>沿着这一处留白，走进纸里的风景。</p>
     <div class="hero-actions">
-     <button class="btn opening-toggle" type="button" aria-controls="swallow-plate" @click="reversed = !reversed">
+     <ChapterLink class="opening-door" to="/studio">
+      <span class="opening-door-mark" aria-hidden="true"><i/><i/></span>
+      <span>推窗进工坊</span><span class="opening-door-arrow" aria-hidden="true">↗</span>
+     </ChapterLink>
+     <button class="btn opening-toggle" :class="{ 'is-reversed': reversed }" type="button" aria-controls="swallow-plate" @click="toggleReading">
       {{ reversed ? '看团花' : '看留白' }} <span aria-hidden="true">↔</span>
      </button>
-     <NuxtLink class="opening-next" :to="{ path: '/', hash: '#discover' }">穿过剪纸窗 <span aria-hidden="true">↓</span></NuxtLink>
     </div>
+    <NuxtLink class="opening-next" :to="{ path: '/', hash: '#discover' }">穿过剪纸窗 <span aria-hidden="true">↓</span></NuxtLink>
    </div>
    <figure id="swallow-plate" class="opening-plate" :class="{ 'plate-negative': reversed }">
-    <span class="opening-index" aria-hidden="true">01 / 双读剪纸</span>
-    <div class="opening-art"><SwallowReveal :reversed="reversed"/></div>
+    <div class="opening-art"><SwallowReveal :reversed="reversed" :assembling="playOpening"/></div>
     <figcaption class="opening-caption">
      <span>《花里有燕》</span>
      <span role="status">{{ reversed ? '留白读法 · 双燕' : '纸面读法 · 团花' }}</span>
@@ -175,9 +217,12 @@ onBeforeUnmount(() => {
   <p v-else class="muted">展厅正在等待第一件作品。</p>
  </section>
  <section class="closing-note wrap">
-  <span aria-hidden="true">✳</span>
-  <h2>下一朵花，从你手中开始。</h2>
-  <NuxtLink to="/studio" class="text-link">打开工作台 ↗</NuxtLink>
+  <div>
+   <p class="eyebrow">把这一页，留给自己</p>
+   <h2>下一朵花，<br/>从你手中开始。</h2>
+   <NuxtLink to="/studio" class="btn primary">打开工作台 <span aria-hidden="true">↗</span></NuxtLink>
+  </div>
+  <div class="closing-art" aria-hidden="true"><PaperArt :model="starterModels[5]!"/></div>
  </section>
  </div>
 </template>

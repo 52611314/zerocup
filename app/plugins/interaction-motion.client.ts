@@ -2,6 +2,7 @@ export default defineNuxtPlugin(nuxtApp => {
   const router = useRouter()
   const pageMotion = useState('paper-route-motion', () => 'paper-chapter')
   const paperWindowTarget = useState('paper-window-target', () => '')
+  const paperWindowArrival = useState('paper-window-arrival-path', () => '')
   const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)')
 
   router.beforeEach((to, from) => {
@@ -9,6 +10,7 @@ export default defineNuxtPlugin(nuxtApp => {
 
     const throughWindow = paperWindowTarget.value === to.path
     paperWindowTarget.value = ''
+    paperWindowArrival.value = throughWindow ? to.path : ''
     const [nextSection, ...nextDetail] = to.path.split('/').filter(Boolean)
     const [oldSection, ...oldDetail] = from.path.split('/').filter(Boolean)
 

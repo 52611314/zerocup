@@ -10,4 +10,6 @@ export const starterModels: PaperModel[] = [
   [cut('drop',37,15,15,.4,23),cut('drop',68,28,14,.4,23),cut('circle',89,0,7),cut('circle',72,61,5),cut('triangle',64,0,6)],
   [cut('circle',45,18,13),cut('drop',78,29,15,.4,22),cut('triangle',83,0,12,.4),cut('triangle',70,61,6,.7,45)]
 ].map(cuts=>({...blankModel(),cuts}))
+export const LEARN_WINDOW_MODEL: PaperModel = { ...starterModels[6]!, color: '#9b3025' }
 export const patternNames = ['团花初绽','四时花信','菱角窗影','圆圆如意','叶影成双','八方星芒','水滴连珠','花间留白']
+export const FIRST_CUT_IMPRINT = { x: 56, y: 22, size: 8, aspect: .55, angle: 23 } as const
