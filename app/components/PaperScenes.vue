@@ -45,6 +45,8 @@ const panelId = `paper-scenes-${artworkId}`
 const scenePaintId = computed(() => `${artworkId}-${scene.value.key}`)
 const sceneIndex = computed(() => String(active.value + 1).padStart(2, '0'))
 const direction = ref<'forward' | 'backward'>('forward')
+const stage = ref<HTMLElement>()
+const { running } = useAmbientMotion(stage)
 
 function showScene(index: number, nextDirection?: 'forward' | 'backward') {
   if (index === active.value) return
@@ -69,7 +71,7 @@ function nextScene() {
       </header>
 
       <figure class="scenes-figure">
-        <div :id="panelId" class="scenes-stage">
+        <div :id="panelId" ref="stage" class="scenes-stage" :data-ambient="running ? 'running' : 'paused'" :style="{ '--ambient-play': running ? 'running' : 'paused' }">
           <Transition :name="`turn-scene-${direction}`">
             <svg
               :key="scene.key"
@@ -89,6 +91,10 @@ function nextScene() {
                   <stop offset="68%" :stop-color="scene.moon.color" stop-opacity=".23" />
                   <stop offset="100%" :stop-color="scene.moon.color" stop-opacity="0" />
                 </radialGradient>
+                <radialGradient :id="`${scenePaintId}-lantern`">
+                  <stop stop-color="#ffe2a4" stop-opacity=".56"/>
+                  <stop offset="100%" stop-color="#ffc786" stop-opacity="0"/>
+                </radialGradient>
                 <linearGradient :id="`${scenePaintId}-turn`">
                   <stop stop-color="#fff3d4" stop-opacity="0" />
                   <stop offset="68%" stop-color="#fff3d4" stop-opacity=".36" />
@@ -97,17 +103,26 @@ function nextScene() {
               </defs>
               <rect width="960" height="440" :fill="`url(#${scenePaintId}-sky)`" />
               <g class="scene-light">
+                <g class="scene-moonlight">
                 <circle :cx="scene.moon.x" :cy="scene.moon.y" :r="scene.moon.radius * 2.3" :fill="`url(#${scenePaintId}-halo)`" />
                 <circle class="scene-moon" :cx="scene.moon.x" :cy="scene.moon.y" :r="scene.moon.radius" :fill="scene.moon.color" />
+                </g>
+                <g v-for="copy in 2" :key="copy" class="scene-trace cloud-trace" :class="{ 'trace-copy': copy === 2 }" :style="{ '--trace-phase': copy === 1 ? '0s' : '-3s' }">
                 <path v-if="scene.key === 'window'" d="M469 116h63m-51 10h33M746 192h57m-44 8h31" fill="none" stroke="#fff1d3" stroke-width="2" opacity=".66" />
                 <path v-else-if="scene.key === 'ridge'" d="M525 86h58m-37 10h55M291 128h44m-31 8h58" fill="none" stroke="#ddad8a" stroke-width="2" opacity=".65" />
                 <path v-else d="M497 104h59m-38 10h61M725 143h65m-52 9h74" fill="none" stroke="#f7cb8d" stroke-width="2" opacity=".65" />
+              </g>
               </g>
               <path class="scene-distance paper-edge" :d="scene.far[1]" :fill="scene.far[0]" />
               <path class="scene-middle paper-edge" :d="scene.middle[1]" :fill="scene.middle[0]" />
               <g v-if="scene.key === 'water'" class="scene-river">
                 <path class="paper-edge" d="M0 326C126 315 220 334 323 322S507 311 596 320S820 337 960 305V440H0Z" fill="#ad625e" />
-                <path d="M124 343q65-10 123 1m47 7q73-16 125-8m20-15q54-8 90 2m-88 11q40-5 65 0m-82 10q58-7 102 0m112 14q76-16 134-9" fill="none" stroke="#f2ae7b" stroke-width="2" opacity=".78" />
+                <g v-for="copy in 2" :key="copy" class="water-ripples scene-trace" :class="{ 'trace-copy': copy === 2 }" :style="{ '--trace-phase': copy === 1 ? '0s' : '-3s' }">
+                  <path d="M124 343q65-10 123 1m47 7q73-16 125-8m20-15q54-8 90 2m-88 11q40-5 65 0m-82 10q58-7 102 0m112 14q76-16 134-9" fill="none" stroke="#f2ae7b" stroke-width="2" opacity=".78" />
+                </g>
+                <g class="water-reflection" fill="none" stroke="#ffcf90" stroke-linecap="round" stroke-width="2" opacity=".48">
+                  <path d="M341 340h15m-20 6h25m-19 6h13M599 342h19m-25 7h30m-23 6h16"/>
+                </g>
               </g>
               <g class="scene-structure" :fill="scene.structure">
                 <g v-if="scene.key === 'window'" transform="translate(42)">
@@ -133,13 +148,17 @@ function nextScene() {
                   <path fill-rule="evenodd" d="M211 356C293 350 306 299 407 273C503 247 597 274 657 321C677 337 702 351 746 356V371H211V356ZM371 355H564C542 315 507 295 468 297C430 298 397 315 371 355ZM271 356H344C336 335 304 334 271 356ZM592 356H679C646 328 612 332 592 356Z" />
                   <path d="M233 352C303 341 317 297 409 274C505 249 593 275 656 321C683 344 708 351 736 354" fill="none" stroke="#df9a70" stroke-width="2.5" />
                   <path d="M349 294V261m13 26v-23m234 21v-23m12 32v-32" fill="none" stroke="#532722" stroke-width="3" />
-                  <path d="M343 261h12v16h-12zm259 0h12v16h-12z" fill="#f5c082" />
+                  <g class="water-lantern-glow">
+                    <circle cx="349" cy="269" r="25" :fill="`url(#${scenePaintId}-lantern)`"/>
+                    <circle cx="608" cy="269" r="25" :fill="`url(#${scenePaintId}-lantern)`"/>
+                  </g>
+                  <path class="water-lantern" d="M343 261h12v16h-12zm259 0h12v16h-12z" fill="#f5c082" />
                   <path d="M342 262h14m245 0h14" stroke="#542723" stroke-width="2" />
                 </template>
               </g>
               <g class="scene-front">
                 <path class="paper-edge" :d="scene.front[1]" :fill="scene.front[0]" />
-                <path :d="scene.cuts[1]" fill="none" :stroke="scene.cuts[0]" stroke-width="2" opacity=".82" />
+                <g v-for="copy in 2" :key="copy" class="scene-trace etched-trace" :class="{ 'trace-copy': copy === 2 }" :style="{ '--trace-phase': copy === 1 ? '0s' : '-3s' }"><path :d="scene.cuts[1]" fill="none" :stroke="scene.cuts[0]" stroke-width="2" opacity=".82" /></g>
                 <path v-if="scene.key === 'window'" d="M772 363Q791 326 803 292m-22 55q-12-31-33-47m29 47q35-17 47-40m-31 21q8-35 1-51M831 355q23-34 29-61m-17 47q-12-20-25-26m25 26q28-14 39-33" fill="none" stroke="#402822" stroke-width="5" />
                 <path v-else-if="scene.key === 'ridge'" d="M218 325Q212 263 241 230Q239 270 250 318M229 284Q211 264 190 255M235 268Q247 251 267 242m-32 11Q217 238 201 241" fill="none" :stroke="scene.front[0]" stroke-width="6" />
                 <path v-else d="M764 372q23-27 27-62m-21 50q-7-35-25-46m28 47q27-13 42-39m-40 42q-19-13-44-17M181 366q-17-18-26-42m21 38q3-24 13-34m-14 35q-26-10-35-17" fill="none" :stroke="scene.front[0]" stroke-width="4" />
@@ -331,7 +350,33 @@ function nextScene() {
 .scene-front { filter: drop-shadow(0 -3px 3px #2a17174f); }
 .scene-fold-light { opacity: 0; }
 
+/* The second trace is an offset copy for a seamless one-way flow. */
+.scene-trace.trace-copy { display: none; }
 @media (prefers-reduced-motion: no-preference) {
+  .scene-trace.trace-copy { display: inline; }
+  .scene-trace { animation: scene-trace-flow 6s var(--trace-phase, 0s) linear infinite; }
+  .cloud-trace { --trace-distance: 42px; }
+  .water-ripples, .etched-trace { --trace-distance: 28px; }
+  .scene-moonlight { animation: moonlight-drift 8s -2s ease-in-out infinite; }
+  @keyframes scene-trace-flow {
+    0% { transform: translateX(calc(-1 * var(--trace-distance))); opacity: 0; }
+    15%, 85% { opacity: 1; }
+    100% { transform: translateX(var(--trace-distance)); opacity: 0; }
+  }
+  @keyframes moonlight-drift {
+    0%, 100% { transform: translate(-20px, -8px); }
+    50% { transform: translate(20px, 10px); }
+  }
+  .water-reflection { --trace-distance: 14px; animation: scene-trace-flow 6s -1s linear infinite; }
+  .water-lantern-glow { animation: lantern-breathe 9s -2s ease-in-out infinite; }
+  .water-lantern { animation: lantern-breathe 9s -2s ease-in-out infinite; }
+  :is(.scene-trace, .scene-moonlight, .water-reflection, .water-lantern-glow, .water-lantern) {
+    animation-play-state: var(--ambient-play, paused);
+  }
+  @keyframes lantern-breathe {
+    0%, 100% { opacity: .46; }
+    50% { opacity: 1; }
+  }
   .turn-scene-forward-enter-active, .turn-scene-backward-enter-active {
     z-index: 2;
     transition: clip-path .66s cubic-bezier(.32,.72,.25,1);

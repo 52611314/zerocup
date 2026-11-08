@@ -33,6 +33,8 @@ const specimens = [
 const selectedSpecimen = ref(0)
 const specimen = computed(() => specimens[selectedSpecimen.value]!)
 const examiningCut = ref(false)
+const room = ref<HTMLElement>()
+const { running: roomRunning } = useAmbientMotion(room)
 
 function find(nextCategory = category.value, text = query.value.trim()) {
   query.value = text
@@ -45,8 +47,8 @@ function find(nextCategory = category.value, text = query.value.trim()) {
 
 <template>
   <div class="page learn-page">
-    <header class="learn-room" aria-labelledby="learn-room-title">
-      <PaperRoomLight />
+    <header ref="room" class="learn-room" :data-ambient="roomRunning ? 'running' : 'paused'" :style="{ '--room-play': roomRunning ? 'running' : 'paused' }" aria-labelledby="learn-room-title">
+      <PaperRoomLight animated />
       <div class="archive-relief" aria-hidden="true"><PaperArt :model="LEARN_WINDOW_MODEL" /></div>
       <div class="wrap learn-breadcrumbs"><Breadcrumbs :items="[{ label: '纸上学堂' }]" /></div>
       <div class="wrap learn-folio">
@@ -179,6 +181,17 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   filter: brightness(0) drop-shadow(1px 1px 0 #b89364) drop-shadow(-2px -3px 0 #0a0a0b);
   transform: rotate(12deg);
   pointer-events: none;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .archive-relief {
+    animation: archive-relief-drift 12s -3s ease-in-out infinite;
+    animation-play-state: var(--room-play, paused);
+  }
+  @keyframes archive-relief-drift {
+    0%, 100% { transform: translate(-12px, -4px) rotate(6deg); }
+    50% { transform: translate(12px, 8px) rotate(18deg); }
+  }
 }
 
 .learn-breadcrumbs { color: #ecd7bf; }

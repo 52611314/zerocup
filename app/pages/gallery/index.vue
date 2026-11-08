@@ -52,12 +52,14 @@ function browse(nextCategory = category.value, nextPage = 1, text = query.value.
 function turn(delta: number) {
   return browse(category.value, page.value + delta, search.value)
 }
+const room = ref<HTMLElement>()
+const { running: roomRunning } = useAmbientMotion(room)
 </script>
 
 <template>
   <div class="page gallery-page">
-    <header class="catalog-hero" aria-labelledby="gallery-room-title">
-      <PaperRoomLight />
+    <header ref="room" class="catalog-hero" :data-ambient="roomRunning ? 'running' : 'paused'" :style="{ '--room-play': roomRunning ? 'running' : 'paused' }" aria-labelledby="gallery-room-title">
+      <PaperRoomLight animated />
       <div class="wrap catalog-breadcrumbs">
         <Breadcrumbs :items="[{ label: '纸上展览' }]" />
       </div>
@@ -76,11 +78,13 @@ function turn(delta: number) {
         <figure class="catalog-wall">
           <div class="catalog-aperture">
             <svg class="catalog-orbit" viewBox="0 0 600 600" aria-hidden="true">
+              <g class="catalog-orbit-ambient">
               <circle cx="300" cy="300" r="282" opacity=".42" />
               <circle cx="300" cy="300" r="267" class="orbit-guide" />
               <circle cx="300" cy="300" r="246" opacity=".6" />
               <path v-for="mark in 8" :key="mark" :transform="`rotate(${(mark - 1) * 45} 300 300)`"
                 d="m300 7 4 8-4 8-4-8z M300 36l3 5-3 5-3-5z" />
+              </g>
             </svg>
             <div class="catalog-sheet">
               <PaperArt v-if="coverWork" :model="coverWork.model" :label="coverWork.title+'数字剪纸'" :data-gallery-cover="coverWork.id"/>
@@ -359,8 +363,19 @@ function turn(delta: number) {
 }
 
 .catalog-sheet .paper-art {
+  position: relative;
+  z-index: 1;
   width: 88%;
   filter: drop-shadow(3px 6px 3px #591f1954);
+}
+
+.catalog-sheet::before {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 24% 25%, #fff9da99, transparent 62%);
+  pointer-events: none;
+  content: '';
 }
 
 .empty-cover {
@@ -483,6 +498,20 @@ function turn(delta: number) {
 }
 
 @media (prefers-reduced-motion: no-preference) {
+  .catalog-orbit-ambient {
+    transform-origin: 300px 300px;
+    animation: orbit-ambient-turn 24s linear infinite;
+    animation-play-state: var(--room-play, paused);
+  }
+  .catalog-sheet::before {
+    animation: mount-light-drift 8s -2s ease-in-out infinite;
+    animation-play-state: var(--room-play, paused);
+  }
+  @keyframes orbit-ambient-turn { to { transform: rotate(360deg); } }
+  @keyframes mount-light-drift {
+    0%, 100% { transform: rotate(-16deg); opacity: .38; }
+    50% { transform: rotate(16deg); opacity: 1; }
+  }
   .catalog-orbit { animation: settle-orbit 1s cubic-bezier(.18, .7, .3, 1) both; }
   .catalog-wall::before { animation: wake-wall 1.25s ease-out both; }
   .wall-work-arrow { transition: transform .24s ease; }

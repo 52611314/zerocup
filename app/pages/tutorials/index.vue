@@ -82,12 +82,14 @@ onBeforeUnmount(() => {
   stopDemo()
   motionPreference?.removeEventListener('change', motionChanged)
 })
+const room = ref<HTMLElement>()
+const { running: roomRunning } = useAmbientMotion(room)
 </script>
 
 <template>
   <div class="page tutorial-page">
-    <header class="tutorial-room" aria-labelledby="tutorial-title">
-      <PaperRoomLight />
+    <header ref="room" class="tutorial-room" :data-ambient="roomRunning ? 'running' : 'paused'" :style="{ '--room-play': roomRunning ? 'running' : 'paused' }" aria-labelledby="tutorial-title">
+      <PaperRoomLight animated />
       <div class="wrap tutorial-breadcrumbs"><Breadcrumbs :items="[{ label: '渐进教程' }]" /></div>
       <div class="wrap tutorial-opening">
         <div class="tutorial-intro">
