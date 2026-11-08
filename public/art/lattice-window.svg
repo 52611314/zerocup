@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 360 720" preserveAspectRatio="none" fill="none">
+  <title>回纹木格纸窗</title>
+  <defs>
+    <linearGradient id="paper" x2="1" y2="1"><stop stop-color="#f2eedf"/><stop offset="1" stop-color="#d8d3c5"/></linearGradient>
+    <linearGradient id="wood" x2="1" y2="0"><stop stop-color="#70502c"/><stop offset=".23" stop-color="#d8b272"/><stop offset=".5" stop-color="#ad7e43"/><stop offset=".8" stop-color="#e3c18a"/><stop offset="1" stop-color="#77512d"/></linearGradient>
+    <pattern id="grain" width="11" height="37" patternUnits="userSpaceOnUse"><path d="M2 0v37M7 4v24M10 0v18" stroke="#63431e" stroke-opacity=".13" stroke-width=".6"/></pattern>
+    <filter id="shadow" x="-10%" y="-5%" width="120%" height="115%"><feDropShadow dx="2" dy="3" stdDeviation="2" flood-color="#46361f" flood-opacity=".4"/></filter>
+  </defs>
+  <path fill="url(#paper)" d="M0 0h360v720H0z"/>
+  <g filter="url(#shadow)" stroke="url(#wood)" stroke-width="9" stroke-linejoin="miter">
+    <path d="M8 8h344v704H8z" stroke-width="16"/>
+    <path d="M126 12v104h108V12M12 116h62v116h212V116h62M74 60h52m108 0h52v56M126 232v-72h108v72M180 116v44M12 288h114v-56m108 0v56h114M74 288v60h212v-60M180 232v200M12 432h114v104h108V432h114M12 604h62V488h212v116h62M126 708V604h108v104M74 660h52m108 0h52v-56M126 488v72h108v-72M180 560v44M74 348v84m212-84v84"/>
+    <path d="M12 348h336"/>
+  </g>
+  <path d="M0 0h360v720H0z" fill="url(#grain)" opacity=".55"/>
+</svg>

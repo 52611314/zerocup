@@ -417,7 +417,7 @@ onBeforeRouteLeave(()=>{if(dirty.value&&model.value.cuts.length&&!saving.value)r
       <input id="work-title" v-model="title" maxlength="60" :disabled="!editable"/>
       <label for="work-description">写一点创作心意 <span>（选填）</span></label>
       <textarea id="work-description" v-model="description" maxlength="500" rows="2" :disabled="!editable" placeholder="这张纸，想留住什么？"/>
-      <p class="save-status" :class="{stamped:id&&!dirty&&!saving}" role="status">{{saving?'正在保存到服务器…':id&&!dirty?'已保存到服务器':dirty?'有未保存的创作':'等待你的第一剪'}}</p>
+      <p class="save-status" role="status">{{saving?'正在保存到服务器…':id&&!dirty?'已保存到服务器':dirty?'有未保存的创作':'等待你的第一剪'}}</p>
       <p v-if="saveError" class="inline-error" role="alert">{{saveError}}</p>
       <button class="btn primary full" v-if="editable" :disabled="saving||!title.trim()" @click="save()">{{saving?'正在收好…':saveError?'重试保存 ↻':'保存草稿 ↓'}}</button>
       <button v-if="saveError" class="text-link" :disabled="saving" @click="save(true)">另存一份新草稿</button>

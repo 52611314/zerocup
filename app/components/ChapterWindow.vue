@@ -8,6 +8,7 @@ const nuxt = useNuxtApp()
 const flight = useWindowFlight()
 const target = useState('paper-window-target', () => '')
 const preference = import.meta.client ? matchMedia('(prefers-reduced-motion: reduce)') : null
+useHead({ link: [{ rel: 'preload', as: 'image', href: '/art/lattice-window.svg' }] })
 const chapter = computed(() => shot.value && windowChapters[shot.value.chapter])
 let coverTimer: ReturnType<typeof setTimeout> | undefined
 let exitTimer: ReturnType<typeof setTimeout> | undefined
@@ -45,7 +46,7 @@ watch(shot, current => {
   if (!current) return
   pageReady = false
   sourceLeft = false
-  coverTimer = setTimeout(() => void navigate(current), 170)
+  coverTimer = setTimeout(() => void navigate(current), current.chapter === '/studio' ? 170 / 1.5 : 170)
   exitTimer = setTimeout(() => clear(current), 2800)
 }, { flush: 'sync' })
 
@@ -137,12 +138,11 @@ onBeforeUnmount(() => {
       <div v-if="chapter.kind === 'window'" class="chapter-window-frame">
         <div class="chapter-window-shutters">
           <div v-for="side in ['left', 'right']" :key="side" class="chapter-window-leaf" :class="`window-leaf-${side}`">
-            <div class="chapter-window-paper"><span v-for="pane in 12" :key="pane"/></div>
+            <div class="chapter-window-paper"><img src="/art/lattice-window.svg" alt="" width="360" height="720"/></div>
             <span class="chapter-window-pull"/>
           </div>
         </div>
         <div class="chapter-window-rim"/>
-        <div class="chapter-window-transom"/>
         <span class="chapter-window-seam"/>
         <div class="chapter-window-sill"/>
       </div>
@@ -173,7 +173,7 @@ onBeforeUnmount(() => {
   --light: #edc08c;
   --frame: clamp(10px, 1.9vw, 29px);
   --joinery: clamp(5px, .78vw, 12px);
-  --transom-height: 12%;
+  --transom-height: 0%;
   position: absolute;
   inset: 0;
   transform-origin: 50% 50%;
@@ -245,14 +245,15 @@ onBeforeUnmount(() => {
 }
 
 .chapter-window-paper {
-  display: grid;
-  grid-template: repeat(3, minmax(0, 1fr)) / repeat(4, minmax(0, 1fr));
-  gap: var(--joinery);
-  padding: calc(var(--joinery) * .24);
-  background: linear-gradient(110deg, #794826, #a86a3f 45%, #693b22);
+  position: relative;
+  min-height: 0;
+  overflow: hidden;
+  background: #e9e3d1;
   border: 1px solid #402315;
   box-shadow: 0 1px #ecbc8555;
 }
+
+.chapter-window-paper img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: fill; }
 
 .chapter-window-paper > span {
   background:
@@ -292,10 +293,10 @@ onBeforeUnmount(() => {
 }
 
 .chapter-window[data-phase="opening"] { pointer-events: none; }
-.chapter-window[data-phase="opening"] .chapter-window-leaf { animation: chapter-window-swing 1.04s cubic-bezier(.52,.08,.36,.95) both; }
-.chapter-window[data-phase="opening"] .window-leaf-right { animation-delay: .055s; }
-.chapter-window[data-phase="opening"] .chapter-window-frame { animation: chapter-window-cross 1.24s cubic-bezier(.5,.08,.28,1) both; }
-.chapter-window[data-phase="opening"] .chapter-window-seam { animation: chapter-window-unlatch .23s ease-in both; }
+.chapter-window[data-phase="opening"] .chapter-window-leaf { animation: chapter-window-swing .693333s cubic-bezier(.52,.08,.36,.95) both; }
+.chapter-window[data-phase="opening"] .window-leaf-right { animation-delay: .036667s; }
+.chapter-window[data-phase="opening"] .chapter-window-frame { animation: chapter-window-cross .826667s cubic-bezier(.5,.08,.28,1) both; }
+.chapter-window[data-phase="opening"] .chapter-window-seam { animation: chapter-window-unlatch .153333s ease-in both; }
 
 @keyframes chapter-window-approach {
   from { clip-path: var(--window-aperture); }
@@ -318,8 +319,7 @@ onBeforeUnmount(() => {
 }
 
 @media (max-aspect-ratio: 4/5) {
-  .chapter-window-frame { --transom-height: 10%; }
-  .chapter-window-paper { grid-template: repeat(6, minmax(0, 1fr)) / repeat(2, minmax(0, 1fr)); }
+  .chapter-window-frame { --transom-height: 0%; }
 }
 
 @media (prefers-reduced-motion: reduce) {

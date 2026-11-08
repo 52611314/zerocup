@@ -12,9 +12,10 @@ export default defineEventHandler(async event=>{
   const site=process.env.SITE_URL || 'http://127.0.0.1:3000'
   const requestOrigin=getRequestURL(event,{xForwardedHost:false,xForwardedProto:false}).origin
   const allowedOrigin=allowedWriteOrigin(origin,site,requestOrigin,import.meta.dev)
-  // Require session proof for omitted headers or altered loopback ports in dev.
+  // Require session proof for omitted headers, dev port changes, or a stripped
+  // port in a local production preview whose URL matches the configured site.
   // A foreign hostname never receives the loopback exception.
-  const tokenFallback=!allowedOrigin&&csrfOriginEligible(origin,requestOrigin,import.meta.dev)&&await hasSessionCsrf(event)
+  const tokenFallback=!allowedOrigin&&csrfOriginEligible(origin,requestOrigin,import.meta.dev,site)&&await hasSessionCsrf(event)
   if(!allowedOrigin&&!tokenFallback)throw createError({
    statusCode:403,
    message:'请求来源不匹配，请确认访问地址与服务配置一致后重试。',

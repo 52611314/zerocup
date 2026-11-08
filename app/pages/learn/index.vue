@@ -69,8 +69,7 @@ function find(nextCategory = category.value, text = query.value.trim()) {
           <div id="learn-atlas-diagram" class="folio-diagram" aria-hidden="true">
             <div class="atlas-field"/>
             <span class="atlas-imprint"><i>45°</i> 原纸角</span>
-            <div class="folio-folded"><PaperArt :model="specimen.model" folded/></div>
-            <span class="folio-fold-note">沿折线对照</span>
+            <div class="folio-folded"><PaperArt :model="specimen.model" folded viewBox="-8 -8 116 86.710678"/></div>
             <div class="folio-spread">
               <Transition name="atlas-lay">
                 <div :key="selectedSpecimen" class="atlas-piece">
@@ -325,14 +324,14 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   content: '';
 }
 
-.folio-diagram::after {
-  z-index: -1;
+.folio-folded {
   inset: 29% 70% 25% 4%;
+  display: grid;
+  place-items: center;
   border: 1px solid #c29770;
   background: linear-gradient(145deg, #ccae84, #a17b54);
   box-shadow: 4px 8px 10px #120b08ad;
   transform: rotate(-7deg);
-  content: '';
 }
 
 .folio-folded,
@@ -341,9 +340,9 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   filter: drop-shadow(2px 6px 3px #58392148);
 }
 
-.folio-folded { left: -5%; top: 44%; width: 38%; transform: translateY(-50%) rotate(-22.5deg); }
+.folio-folded :deep(.paper-art) { width: 90%; height: auto; }
 .folio-spread { right: 9.5%; top: 50%; width: min(61%, 395px); transform: translateY(-50%) rotate(-8deg); }
-.folio-examining .folio-folded { transform: translateY(-50%) rotate(-22.5deg) scale(1.13); }
+.folio-examining .folio-folded :deep(.paper-art) { transform: scale(1.06); }
 .atlas-piece { position: relative; }
 .folio-examining .atlas-piece > .paper-art:not(.atlas-isolated) { opacity: .38; }
 .atlas-isolated { position: absolute; inset: 0; width: 100%; height: 100%; }
@@ -359,14 +358,6 @@ function find(nextCategory = category.value, text = query.value.trim()) {
   opacity: 0;
 }
 .folio-examining .atlas-sector { opacity: 1; }
-.folio-fold-note {
-  position: absolute;
-  left: 5.5%;
-  bottom: 24%;
-  color: #422c24;
-  font-size: clamp(10px, 1vw, 13px);
-  font-weight: 700;
-}
 
 .atlas-coordinate, .atlas-imprint {
   position: absolute;

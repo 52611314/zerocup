@@ -3,7 +3,7 @@ import type { RouteLocationRaw } from 'vue-router'
 export const windowChapters = {
   '/learn': { kind: 'folio', revealMs: 680 },
   '/tutorials': { kind: 'fold', revealMs: 680 },
-  '/studio': { kind: 'window', revealMs: 1240 },
+  '/studio': { kind: 'window', revealMs: 1240 / 1.5 },
   '/gallery': { kind: 'iris', revealMs: 680 },
 } as const
 

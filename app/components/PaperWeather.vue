@@ -4,7 +4,7 @@ let timer:ReturnType<typeof setInterval>
 const reduced=import.meta.client?matchMedia('(prefers-reduced-motion: reduce)'):null
 function scatter(){
   const root=layer.value
-  if(!root || root.childElementCount>=3)return
+  if(!root || root.childElementCount>=20)return
   const petal=document.createElement('i')
   petal.className='wind-petal shape-'+Math.floor(Math.random()*4)
   const size=5+Math.random()*6
@@ -29,7 +29,7 @@ function sync(){
   if(document.hidden || reduced?.matches){
     layer.value?.getAnimations({subtree:true}).forEach(a=>a.cancel());return
   }
-  scatter();timer=setInterval(scatter,innerWidth<600?2800:2000)
+  scatter();timer=setInterval(scatter,(innerWidth<600?2800:2000)/(3.5*1.8))
 }
 onMounted(()=>{sync();document.addEventListener('visibilitychange',sync);reduced?.addEventListener('change',sync)})
 onBeforeUnmount(()=>{clearInterval(timer);document.removeEventListener('visibilitychange',sync);reduced?.removeEventListener('change',sync)})

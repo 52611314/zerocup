@@ -2,9 +2,8 @@
 import { blankModel, cutPath } from '../../shared/model'
 import { FIRST_CUT_IMPRINT, LEARN_WINDOW_MODEL } from '../../shared/patterns'
 
-import { measureWindowArtwork, type WindowWork } from '../composables/useWindowFlight'
+import type { WindowWork } from '../composables/useWindowFlight'
 const props=defineProps<{featuredWork?:WindowWork}>()
-const flight=useWindowFlight()
 const firstSheet = blankModel()
 const guideCut = { id: 'window-guide', type: 'drop' as const, ...FIRST_CUT_IMPRINT }
 const lessonSheet = { ...firstSheet, cuts: [{ id: 'window-lesson', type: 'circle' as const, x: 62, y: 25, size: 9, aspect: 1, angle: 0 }] }
@@ -15,11 +14,6 @@ const windows = [
   { key: 'gallery', to: '/gallery', number: '04', title: '纸上展览', description: '看看同一张纸，能开出多少种花。' }
 ] as const
 
-function prepareGalleryFlight(link: HTMLAnchorElement) {
-  if (!props.featuredWork) return
-  const art = link.querySelector<SVGSVGElement>('[data-window-work]')
-  if (art) flight.value = { work: props.featuredWork, pose: measureWindowArtwork(art) }
-}
 </script>
 
 <template>
@@ -34,7 +28,7 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
 
     <ul class="window-list">
       <li v-for="entry in windows" :key="entry.key" :class="`window-${entry.key}`">
-        <ChapterLink class="window-link" :to="entry.to" :before-open="entry.key === 'gallery' ? prepareGalleryFlight : undefined">
+        <ChapterLink class="window-link" :to="entry.to">
             <span class="window-mat" aria-hidden="true">
               <span class="window-cut">
                 <span class="window-scene">
@@ -45,21 +39,20 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
                     <PaperArt :model="LEARN_WINDOW_MODEL" />
                   </span>
                   <span v-else-if="entry.key === 'tutorials'" class="window-lesson">
-                    <PaperArt :model="lessonSheet" folded />
                     <PaperArt :model="lessonSheet" />
                   </span>
                   <template v-else-if="entry.key === 'studio'">
                     <span class="window-fold-line"/>
                     <span class="window-studio-sheet">
-                      <PaperArt :model="firstSheet" folded />
-                      <svg class="window-stencil" viewBox="-108 -108 216 216" aria-hidden="true">
+                      <PaperArt :model="firstSheet" folded viewBox="-8 -8 116 86.710678" />
+                      <svg class="window-stencil" viewBox="-8 -8 116 86.710678" aria-hidden="true">
                         <path :d="cutPath(guideCut)" :transform="`translate(${guideCut.x} ${guideCut.y}) rotate(${guideCut.angle})`" />
                       </svg>
                     </span>
                   </template>
                   <template v-else>
                     <span class="window-mount"/>
-                    <PaperArt v-if="featuredWork" :model="featuredWork.model" :data-window-work="featuredWork.id" :class="{ 'window-work-in-flight': flight?.work.id === featuredWork.id }" />
+                    <PaperArt v-if="featuredWork" :model="featuredWork.model" :data-window-work="featuredWork.id" />
                     <span v-else class="window-empty">等待下一朵花</span>
                   </template>
                 </span>
@@ -302,12 +295,7 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
   filter: drop-shadow(2px 3px 1px #62372353);
 }
 
-.window-lesson :deep(.paper-art:first-child) {
-  inset: auto auto 6% -15%;
-  transform: rotate(-20deg);
-}
-
-.window-lesson :deep(.paper-art:last-child) { inset: 9% 1% auto auto; }
+.window-lesson :deep(.paper-art) { left: 50%; top: 50%; transform: translate(-50%, -50%); }
 
 .window-studio .window-scene {
   background:
@@ -316,7 +304,6 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
     linear-gradient(140deg, #b68b68 1%, #f5dfba 50%, #e9c89d);
 }
 
-.window-studio .window-link:is(:hover, :focus-visible) .window-scene { transform: none; }
 
 .window-studio .window-scene::after {
   position: absolute;
@@ -329,11 +316,11 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
 
 .window-studio-sheet {
   position: absolute;
-  top: 50%;
+  top: calc(50% + 14px);
   left: 50%;
-  width: 124%;
+  width: 56%;
   max-width: none;
-  transform: translate(-68%, -60%) rotate(-15deg);
+  transform: translate(-50%, -50%) rotate(-22.5deg);
   filter: drop-shadow(4px 5px 2px #45231a53);
 }
 
@@ -352,7 +339,7 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
   position: absolute;
   left: 22%;
   width: 63%;
-  transform: rotate(-20deg);
+  transform: none;
   border-top: 1px dashed #865f44b3;
 }
 
@@ -378,7 +365,6 @@ function prepareGalleryFlight(link: HTMLAnchorElement) {
   transform: rotate(-10deg);
   filter: drop-shadow(3px 4px 2px #54271d41);
 }
-.window-work-in-flight { opacity: 0; }
 
 .window-caption {
   display: grid;

@@ -37,7 +37,7 @@ export default defineNuxtPlugin(app => {
     style.maskRepeat='no-repeat'
     style.maskPosition=lines.map((_,i)=>'0 '+edges[i]+'px').join(',')
     el.removeAttribute('data-paper-wait')
-    const animation=el.animate(frames,{duration:300+lines.length*95,easing:'linear'})
+    const animation=el.animate(frames,{duration:(300+lines.length*95)/.3,easing:'linear'})
     active.set(el,animation)
     animation.finished.catch(()=>{}).finally(()=>{
       style.maskImage='';style.maskPosition='';style.maskRepeat='';active.delete(el)

@@ -152,9 +152,7 @@ onBeforeUnmount(() => {
     <span class="exhibit-index">01 / 纸上展签</span>
     <strong>团花初绽</strong>
    </div>
-   <span class="exhibit-mark" aria-hidden="true">紙</span>
    <div class="hero-orbit" aria-hidden="true"/>
-   <PaperCutLight :model="exhibit" :visible="sectors === 8 && !playing"/>
    <div class="hero-art" :class="{ unfolding, folded: sectors === 1 }" :data-fold-to="foldTarget || undefined">
     <PaperArt :model="exhibit" :sectors="sectors" label="团花初绽，项目原创数字剪纸"/>
    </div>
