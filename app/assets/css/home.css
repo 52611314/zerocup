@@ -180,25 +180,13 @@
   border: 1px solid #a0655448;
   pointer-events: none;
 }
-.exhibit-label, .exhibit-mark, .exhibit-controls {
+.exhibit-label, .exhibit-controls {
   position: absolute;
   z-index: 2;
 }
 .exhibit-label { top: 26px; left: 29px; display: grid; gap: 3px; }
 .exhibit-index { font-size: 10px; letter-spacing: .15em; color: #703c2b; }
 .exhibit-label strong { font: 700 clamp(18px, 2vw, 30px)/1.2 var(--serif); letter-spacing: .08em; }
-.exhibit-mark {
-  right: 29px;
-  top: 27px;
-  display: grid;
-  place-items: center;
-  width: 38px;
-  aspect-ratio: 1;
-  border: 1px solid currentColor;
-  color: var(--red);
-  font: 700 23px var(--serif);
-  transform: rotate(7deg);
-}
 .hero-orbit {
   position: absolute;
   width: 66%;
@@ -213,17 +201,6 @@
   filter: drop-shadow(2px 9px 7px #6c281943);
   transition: transform .45s cubic-bezier(.2,.7,.3,1);
 }
-.cut-light {
-  position: absolute;
-  width: 64%;
-  fill: #fff0ae;
-  opacity: 0;
-  filter: blur(.4px) drop-shadow(0 0 3px #fff6cc);
-  transform: translate(20%, 13%) rotate(-11deg);
-  transition: opacity .45s ease;
-  pointer-events: none;
-}
-.cut-light.light-visible { opacity: .9; }
 .hero-art.folded { transform: translate(-15%, -3%) rotate(-30deg); }
 .hero-art[data-fold-to] { transform: rotate(-21deg); }
 .hero-art.unfolding { transform: rotate(-11deg); }
@@ -318,13 +295,11 @@
 
 @media (max-width: 920px) {
   .exhibit-label { top: 22px; left: 23px; }
-  .exhibit-mark { top: 23px; right: 23px; width: 30px; font-size: 18px; }
-  .exhibit-controls { inset: auto 23px 20px; }
+    .exhibit-controls { inset: auto 23px 20px; }
 }
 @media (max-width: 800px) {
   .hero-display { aspect-ratio: 1.28; }
-  .hero-art, .cut-light { width: 62%; }
-  .hero-orbit { width: 64%; }
+  .hero-art,   .hero-orbit { width: 64%; }
   .workshop-promo { grid-template-columns: 1fr; }
 }
 @media (max-width: 700px) {
@@ -367,8 +342,7 @@
   .opening-caption { gap: 6px; font-size: 10px; }
   .opening-door, .opening-toggle { min-height: 44px; }
   .opening-toggle { padding-inline: 12px; }
-  .cut-light { width: 69%; transform: translate(15%, 12%) rotate(-11deg); }
-  .closing-note { grid-template-columns: minmax(0, 1fr); padding-inline-end: max(26px, 14%); }
+    .closing-note { grid-template-columns: minmax(0, 1fr); padding-inline-end: max(26px, 14%); }
   .closing-art { position: absolute; z-index: -1; inset: auto -10% -20% auto; width: 49%; opacity: .14; }
 }
 

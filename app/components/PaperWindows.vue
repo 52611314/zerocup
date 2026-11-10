@@ -1,9 +1,8 @@
 <script setup lang="ts">
-import { blankModel, cutPath } from '../../shared/model'
+import { blankModel, cutPath, type PaperModel } from '../../shared/model'
 import { FIRST_CUT_IMPRINT, LEARN_WINDOW_MODEL } from '../../shared/patterns'
 
-import type { WindowWork } from '../composables/useWindowFlight'
-const props=defineProps<{featuredWork?:WindowWork}>()
+defineProps<{featuredWork?:{id:string;model:PaperModel}}>()
 const firstSheet = blankModel()
 const guideCut = { id: 'window-guide', type: 'drop' as const, ...FIRST_CUT_IMPRINT }
 const lessonSheet = { ...firstSheet, cuts: [{ id: 'window-lesson', type: 'circle' as const, x: 62, y: 25, size: 9, aspect: 1, angle: 0 }] }

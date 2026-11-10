@@ -35,7 +35,6 @@ function closeCurrentMenu(event: MouseEvent, href: string) {
  <div id="site-top" tabindex="-1">
   <NuxtRouteAnnouncer />
   <PaperNavigation/>
-  <WindowFlight/>
   <ChapterWindow/>
   <PaperWeather/>
   <a class="skip" href="#main">跳到主要内容</a>
@@ -72,7 +71,7 @@ function closeCurrentMenu(event: MouseEvent, href: string) {
      <NuxtLink to="/admin">展馆管理</NuxtLink>
      <NuxtLink :to="{ path: route.path, query: route.query, hash: '#site-top' }">回到顶部 ↑</NuxtLink>
     </div>
-    <small>2026 零杯网页设计大赛<br/>匠心传成，非遗焕新</small>
+    <small>2026 零杯网页设计大赛<br/>匠心传承，非遗焕新</small>
    </footer>
   </div>
  </div>

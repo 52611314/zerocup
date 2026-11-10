@@ -21,7 +21,7 @@ export function useChapterWindow() {
   const shot = useState<ChapterWindowShot | null>('chapter-window', () => null)
   const router = useRouter()
 
-  function openChapterWindow(event: MouseEvent, to: RouteLocationRaw, onStart?: () => void) {
+  function openChapterWindow(event: MouseEvent, to: RouteLocationRaw) {
     if (!import.meta.client || event.defaultPrevented || event.button !== 0
       || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return false
     const link = event.currentTarget
@@ -44,7 +44,6 @@ export function useChapterWindow() {
       clamp(innerHeight - bounds.bottom, innerHeight),
       clamp(bounds.left, innerWidth),
     ]
-    onStart?.()
     shot.value = {
       chapter: next.path as WindowChapter,
       destination: next.fullPath,

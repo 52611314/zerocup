@@ -54,14 +54,11 @@
 @keyframes cut-away { 15% { filter: brightness(1.18); } to { transform: translate(5px,13px) rotate(24deg) scale(.78); opacity: 0; } }
 .unfolding .opening-leaf { animation: open-fold .24s ease-out both; transform-origin: 0 0; }
 @keyframes open-fold { from { transform: scaleY(-1); filter: brightness(.77); } 50% { transform: scaleY(.04); filter: brightness(.86); } to { transform: scaleY(1); filter: brightness(1); } }
-.stamped::before { content: '已存'; display: inline-block; margin-right: .6em; border: 1px solid; padding: 0 .25em; color: var(--red); font: 15px var(--serif); transform: rotate(-6deg); animation: paper-stamp .2s ease-out; }
-@keyframes paper-stamp { from { transform: rotate(-10deg) scale(1.3); opacity: 0; } }
 .work-caption { transition: transform .16s; transform-origin: left top; }
 .work-card:active .work-caption { transform: rotate(-1deg) translateY(-2px); }
 @media(prefers-reduced-motion:reduce) {
   .loading-chip,.cut-off,.paper-scraps { display:none; }
-  .unfolding .opening-leaf,.stamped::before { animation:none; }
-  .work-card:active .work-caption { transform:none; }
+  .unfolding .opening-leaf,  .work-card:active .work-caption { transform:none; }
   :where(button, .btn):not(:disabled, [aria-disabled="true"]):active { translate: none; }
   .paper-chapter-enter-active,.paper-chapter-leave-active,
   .paper-detail-open-enter-active,.paper-detail-open-leave-active,

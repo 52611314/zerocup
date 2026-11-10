@@ -5,7 +5,6 @@ import { windowChapters, type ChapterWindowShot } from '../composables/useChapte
 const { shot } = useChapterWindow()
 const router = useRouter()
 const nuxt = useNuxtApp()
-const flight = useWindowFlight()
 const target = useState('paper-window-target', () => '')
 const preference = import.meta.client ? matchMedia('(prefers-reduced-motion: reduce)') : null
 useHead({ link: [{ rel: 'preload', as: 'image', href: '/art/lattice-window.svg' }] })
@@ -22,7 +21,6 @@ function clear(current = shot.value, focus = false) {
   clearTimeout(exitTimer)
   cancelAnimationFrame(frame)
   shot.value = null
-  if (current.chapter === '/gallery' && router.currentRoute.value.path !== '/gallery') flight.value = null
   if (focus && current.keyboard && router.currentRoute.value.fullPath === current.destination
     && !document.querySelector('#main')?.contains(document.activeElement)) {
     document.getElementById('main')?.focus({ preventScroll: true })
@@ -192,16 +190,6 @@ onBeforeUnmount(() => {
     inset 0 2px 16px var(--frame) #331b1250;
 }
 
-.chapter-window-transom {
-  position: absolute;
-  inset: var(--frame) var(--frame) auto;
-  height: var(--transom-height);
-  border-bottom: calc(var(--joinery) + 2px) solid #704329;
-  background:
-    repeating-linear-gradient(90deg, transparent 0 calc(12.5% - 3px), #774828 calc(12.5% - 3px) calc(12.5% - 1px), #ac784d calc(12.5% - 1px) 12.5%),
-    linear-gradient(180deg, #b99366, #ead6ae 66%, #d2b17d);
-  box-shadow: inset 0 2px 7px #47271960, 0 1px #bc8c64, 0 3px 6px #482c2260;
-}
 
 .chapter-window-sill {
   position: absolute;
@@ -255,18 +243,7 @@ onBeforeUnmount(() => {
 
 .chapter-window-paper img { position: absolute; inset: 0; display: block; width: 100%; height: 100%; object-fit: fill; }
 
-.chapter-window-paper > span {
-  background:
-    repeating-linear-gradient(117deg, #83603a0c 0 1px, transparent 1px 4px),
-    radial-gradient(ellipse at 45% 35%, #ead2a6, #c19763);
-  border: 1px solid #572e19;
-  box-shadow: inset 3px 5px 10px #51301d5c, 0 1px #e3b27882;
-}
 
-.chapter-window-paper > span:nth-child(4n + 2) {
-  background-color: #ead0a0;
-  background-blend-mode: normal, multiply;
-}
 
 .chapter-window-pull {
   position: absolute;

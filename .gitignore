@@ -2,6 +2,7 @@ node_modules/
 .nuxt/
 .output/
 .env
+/TEAM.md
 .data/
 .npm-cache/
 test-results/
@@ -9,3 +10,5 @@ artifacts/
 packages/
 *.log
 .DS_Store
+
+.review/

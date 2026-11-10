@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import type { RouteLocationRaw } from 'vue-router'
 
-const props = defineProps<{ to: RouteLocationRaw; beforeOpen?: (source: HTMLAnchorElement) => void }>()
+const props = defineProps<{ to: RouteLocationRaw }>()
 const { openChapterWindow } = useChapterWindow()
 
 function follow(event: MouseEvent, navigate: (event: MouseEvent) => unknown) {
-  const source = event.currentTarget as HTMLAnchorElement
-  if (!openChapterWindow(event, props.to, () => props.beforeOpen?.(source))) void navigate(event)
+  if (!openChapterWindow(event, props.to)) void navigate(event)
 }
 </script>
 
