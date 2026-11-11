@@ -65,4 +65,42 @@ try{
   await closePage(page)
  }
  console.log('Gallery empty/error: no stuck overlay; failed request can retry')
+ for (const mode of ['escape', 'reduce', 'timeout']) {
+  const page = await browser.newPage({
+   baseURL: process.env.SITE_URL,
+   viewport: {width: 390, height: 844},
+   reducedMotion: mode === 'reduce' ? 'reduce' : 'no-preference',
+  })
+  try {
+   await page.goto('/', {waitUntil: 'networkidle'})
+   if (mode === 'timeout') {
+    await page.route('**/api/gallery*', async route => {
+     await new Promise(resolve => setTimeout(resolve, 3200))
+     await route.continue()
+    })
+    await page.locator('.window-gallery a').press('Enter')
+    await page.locator('.chapter-window').waitFor()
+    await page.locator('.chapter-window').waitFor({state: 'detached'})
+    await page.locator('[data-gallery-cover]').waitFor()
+   } else {
+    const workshop = page.locator('.opening-door')
+    if (mode === 'escape') {
+     // Skip in the same task, before the route timer fires.
+     await workshop.evaluate(link => {
+      link.focus()
+      link.click()
+      window.dispatchEvent(new KeyboardEvent('keydown', {key: 'Escape'}))
+     })
+    } else {
+     await workshop.press('Enter')
+    }
+    await page.locator('.canvas-surface').waitFor()
+   }
+   assert.equal(await page.locator('.chapter-window').count(), 0, mode)
+   await expect(page.locator('#main')).toBeFocused()
+  } finally {
+   await closePage(page)
+  }
+ }
+ console.log('Chapter keyboard focus: Escape, reduced motion and slow loading passed')
 }finally{await browser.close();await db.end()}

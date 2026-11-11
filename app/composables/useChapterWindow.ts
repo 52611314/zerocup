@@ -17,13 +17,24 @@ export interface ChapterWindowShot {
   phase: 'cover' | 'waiting' | 'opening'
 }
 
+export function isPlainChapterActivation(event: MouseEvent) {
+  return !event.defaultPrevented && event.button === 0
+    && !event.ctrlKey && !event.metaKey && !event.shiftKey && !event.altKey
+}
+
+export function focusChapterMain(source: Element | null) {
+  const active = document.activeElement
+  if (active === source || active === document.body) {
+    document.getElementById('main')?.focus({ preventScroll: true })
+  }
+}
+
 export function useChapterWindow() {
   const shot = useState<ChapterWindowShot | null>('chapter-window', () => null)
   const router = useRouter()
 
   function openChapterWindow(event: MouseEvent, to: RouteLocationRaw) {
-    if (!import.meta.client || event.defaultPrevented || event.button !== 0
-      || event.ctrlKey || event.metaKey || event.shiftKey || event.altKey) return false
+    if (!import.meta.client || !isPlainChapterActivation(event)) return false
     const link = event.currentTarget
     if (!(link instanceof HTMLAnchorElement) || link.hasAttribute('download')
       || (link.target && link.target !== '_self')) return false

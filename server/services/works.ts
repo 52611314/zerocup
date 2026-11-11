@@ -1,10 +1,9 @@
 import {practiceRoute} from './practice'
 import {saveWork} from './save-work'
-import { randomUUID } from 'node:crypto'
 import type { H3Event } from 'h3'
 import { query } from '../utils/db'
+import { hasSessionCsrf } from '../utils/csrf'
 import { visitor, jsonBody, textField, uuid, rateLimit } from '../utils/security'
-import { validModel } from '../../shared/model'
 export async function workRoutes(event:H3Event,path:string):Promise<any> {
  const owner=await visitor(event)
  if(event.method!=='GET')await rateLimit(event,`write:${owner}`,90)
@@ -48,6 +47,24 @@ export async function workRoutes(event:H3Event,path:string):Promise<any> {
   }
   if(event.method==='PATCH') {
    return saveWork(owner,await jsonBody(event),id)
+  }
+  if(event.method==='DELETE' && path===`works/${id}`) {
+   if(!await hasSessionCsrf(event)) {
+    throw createError({statusCode:403,message:'删除校验已失效，请刷新纸笺后重试。'})
+   }
+   const version=(await jsonBody(event))?.version
+   if(!Number.isInteger(version)||version<1||version>2_147_483_647) {
+    throw createError({statusCode:400,message:'作品版本无效。'})
+   }
+   const [deleted]=await query(
+    "DELETE FROM works WHERE id=$1 AND owner_id=$2 AND version=$3 AND status IN ('draft','rejected') RETURNING id",
+    [id,owner,version]
+   )
+   if(deleted)return deleted
+
+   const [current]=await query('SELECT id FROM works WHERE id=$1 AND owner_id=$2',[id,owner])
+   if(!current)throw createError({statusCode:404,message:'找不到本访客的这张纸笺。'})
+   throw createError({statusCode:409,message:'作品版本或投稿状态已改变，请刷新纸笺后查看。'})
   }
  }
  throw createError({statusCode:405,message:'不支持此操作。'})

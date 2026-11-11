@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { isNavigationFailure } from 'vue-router'
-import { windowChapters, type ChapterWindowShot } from '../composables/useChapterWindow'
+import { focusChapterMain, windowChapters, type ChapterWindowShot } from '../composables/useChapterWindow'
 
 const { shot } = useChapterWindow()
 const router = useRouter()
@@ -14,25 +14,32 @@ let exitTimer: ReturnType<typeof setTimeout> | undefined
 let frame = 0
 let pageReady = false
 let sourceLeft = false
+let sourceFocus: Element | null = null
 
 function clear(current = shot.value, focus = false) {
   if (!current || shot.value !== current) return
   clearTimeout(coverTimer)
   clearTimeout(exitTimer)
   cancelAnimationFrame(frame)
+  const activatedElement = sourceFocus
+  sourceFocus = null
   shot.value = null
-  if (focus && current.keyboard && router.currentRoute.value.fullPath === current.destination
-    && !document.querySelector('#main')?.contains(document.activeElement)) {
-    document.getElementById('main')?.focus({ preventScroll: true })
+  if (focus && current.keyboard && router.currentRoute.value.fullPath === current.destination) {
+    focusChapterMain(activatedElement)
   }
 }
 
 async function navigate(current: ChapterWindowShot) {
   if (shot.value !== current || current.phase !== 'cover') return
+  const activatedElement = sourceFocus
   current.phase = 'waiting'
   target.value = current.chapter
   try {
-    if (isNavigationFailure(await router.push(current.destination))) clear(current)
+    const failure = await router.push(current.destination)
+    if (isNavigationFailure(failure)) clear(current)
+    else if (!shot.value && current.keyboard && router.currentRoute.value.fullPath === current.destination) {
+      focusChapterMain(activatedElement)
+    }
   } catch {
     clear(current)
   } finally {
@@ -44,8 +51,9 @@ watch(shot, current => {
   if (!current) return
   pageReady = false
   sourceLeft = false
+  sourceFocus = current.keyboard ? document.activeElement : null
   coverTimer = setTimeout(() => void navigate(current), current.chapter === '/studio' ? 170 / 1.5 : 170)
-  exitTimer = setTimeout(() => clear(current), 2800)
+  exitTimer = setTimeout(() => clear(current, true), 2800)
 }, { flush: 'sync' })
 
 const releaseGuard = router.beforeEach(to => {

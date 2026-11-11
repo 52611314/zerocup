@@ -175,6 +175,7 @@
 .paper-draft :deep(.work-card) { flex: 1; }
 .paper-draft :deep(.work-caption h3) { overflow-wrap: anywhere; }
 .draft-state {
+  flex-wrap: wrap;
   gap: 8px 14px;
   padding: 8px 12px;
   border: 1px solid var(--line);
@@ -184,6 +185,9 @@
 }
 .draft-state small { color: var(--muted); }
 .draft-state a { min-height: 44px; }
+.draft-actions { display: flex; align-items: center; gap: 8px; }
+.draft-delete { padding-inline: 8px; border-color: transparent; color: var(--red); }
+.draft-delete:hover:not(:disabled) { border-color: var(--line); background: #fff8e9; }
 .review-note {
   margin: 0;
   padding: 10px 12px;

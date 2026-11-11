@@ -68,8 +68,39 @@ const favoritesRequest = await useFetch<Favorite[]>('/api/me/favorites', { serve
 const { data: works } = worksRequest
 const { data: progress } = progressRequest
 const { data: favorites } = favoritesRequest
+const { feedback } = useFeedback()
+const deletingId = ref<string | null>(null)
+const collectionTitle = ref<HTMLElement>()
+function isEditableWork(work: Draft) {
+  return work.status === 'draft' || work.status === 'rejected'
+}
+
 // The API orders the current visitor's works by the most recent update.
-const resumeWork = computed(() => works.value?.find(work => work.status === 'draft' || work.status === 'rejected'))
+const resumeWork = computed(() => works.value?.find(isEditableWork))
+
+async function removeDraft(work: Draft) {
+  if (deletingId.value || !isEditableWork(work)) return
+  if (!window.confirm(`确定删除「${work.title}」？删除后无法恢复。`)) return
+
+  deletingId.value = work.id
+  try {
+    await writeApi(`/api/works/${encodeURIComponent(work.id)}`, { method: 'DELETE', body: { version: work.version } })
+    const restoreFocus = document.activeElement === document.body
+    works.value = works.value?.filter(item => item.id !== work.id)
+    void progressRequest.refresh()
+    feedback('草稿已删除。')
+    if (restoreFocus && tab.value === 'works') {
+      await nextTick()
+      collectionTitle.value?.focus({ preventScroll: true })
+    }
+  } catch (error) {
+    feedback(errorMessage(error), 'error')
+    const status = (error as { statusCode?: number } | null)?.statusCode
+    if (status === 404 || status === 409) void worksRequest.refresh()
+  } finally {
+    deletingId.value = null
+  }
+}
 const requests = { works: worksRequest, progress: progressRequest, favorites: favoritesRequest }
 const activeSection = computed(() => sections[tab.value])
 const activeRequest = computed(() => requests[tab.value])
@@ -128,7 +159,7 @@ const labels: Record<Draft['status'], string> = {
       <Transition name="notebook-sheet">
         <div :key="tab" class="notebook-sheet">
           <div class="notebook-collection-heading">
-            <h2 id="collection-title">{{ activeSection.label }}</h2>
+            <h2 id="collection-title" ref="collectionTitle" tabindex="-1">{{ activeSection.label }}</h2>
             <p v-if="!loading && !error">{{ count }} {{ activeSection.unit }}</p>
           </div>
 
@@ -147,7 +178,17 @@ const labels: Record<Draft['status'], string> = {
                 <div class="draft-state">
                   <span>{{ labels[work.status] }}</span>
                   <NuxtLink v-if="work.status === 'published'" :to="`/gallery/${work.id}`" class="text-link">看看展览 ↗</NuxtLink>
-                  <small v-else>第 {{ work.version }} 版</small>
+                  <div v-else class="draft-actions">
+                    <small>第 {{ work.version }} 版</small>
+                    <button
+                      v-if="isEditableWork(work)"
+                      type="button"
+                      class="draft-delete"
+                      :aria-label="`删除草稿「${work.title}」`"
+                      :disabled="deletingId !== null"
+                      @click="removeDraft(work)"
+                    >{{ deletingId === work.id ? '正在删除…' : '删除草稿' }}</button>
+                  </div>
                 </div>
                 <p v-if="work.review_note" class="review-note"><strong>展馆留言</strong>{{ work.review_note }}</p>
               </article>
